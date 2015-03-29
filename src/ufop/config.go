@@ -9,7 +9,7 @@ import (
 
 //default ufop config
 var DefaultUfopConfig UfopConfig = UfopConfig{
-	ListenPort:     9011,
+	ListenPort:     9100,
 	ListenHost:     "0.0.0.0",
 	ReadTimeout:    30,
 	WriteTimeout:   30,
