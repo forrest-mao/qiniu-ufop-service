@@ -25,8 +25,9 @@ type UfopConfig struct {
 
 	MaxHeaderBytes int `json:"max_header_bytes,omitempty"`
 
-	AccessKey string `json:"access_key"`
-	SecretKey string `json:"secret_key"`
+	UfopPrefix string `json:"ufop_prefix"`
+	AccessKey  string `json:"access_key"`
+	SecretKey  string `json:"secret_key"`
 }
 
 func (this *UfopConfig) LoadFromFile(configFilePath string) (err error) {

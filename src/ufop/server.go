@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	ufopPrefix  string
 	jobHandlers map[string]UfopJobHandler
 	unzipper    *UnZipper
 )
@@ -38,12 +39,13 @@ func (this *UfopServer) registerJobHandlers() {
 		SecretKey: []byte(this.cfg.SecretKey),
 	}
 	jobHandlers = make(map[string]UfopJobHandler, 0)
+	ufopPrefix = this.cfg.UfopPrefix
 	//unzipper
 	unzipper = &UnZipper{
 		mac: &mac,
 	}
 
-	jobHandlers["unzip"] = unzipper
+	jobHandlers[ufopPrefix+"unzip"] = unzipper
 }
 
 func (this *UfopServer) Listen() {
@@ -108,6 +110,7 @@ func handleJob(ufopReq UfopRequest) (interface{}, error) {
 	items := strings.SplitN(cmd, "/", 2)
 	fop := items[0]
 	if jobHandler, ok := jobHandlers[fop]; ok {
+		ufopReq.Cmd = strings.TrimPrefix(ufopReq.Cmd, ufopPrefix)
 		ufopResult, err = jobHandler.Do(ufopReq)
 	} else {
 		err = errors.New("no fop available for the request")
