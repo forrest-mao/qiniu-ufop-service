@@ -96,7 +96,7 @@ func serveUfop(w http.ResponseWriter, req *http.Request) {
 
 	ufopResult, err = handleJob(ufopReq)
 	if err != nil {
-		writeJsonError(w, 200, err.Error())
+		writeJsonError(w, 400, err.Error())
 	} else {
 		writeJsonResult(w, 200, ufopResult)
 	}
