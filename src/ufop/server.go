@@ -42,7 +42,9 @@ func (this *UfopServer) registerJobHandlers() {
 	ufopPrefix = this.cfg.UfopPrefix
 	//unzipper
 	unzipper = &UnZipper{
-		mac: &mac,
+		mac:           &mac,
+		maxFileLength: this.cfg.UnzipMaxFileLength,
+		maxFileCount:  this.cfg.UnzipMaxFileCount,
 	}
 
 	jobHandlers[ufopPrefix+"unzip"] = unzipper

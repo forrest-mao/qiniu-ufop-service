@@ -19,8 +19,13 @@ import (
 	"unicode/utf8"
 )
 
+const (
+	MAX_FILE_LENGTH int64 = 100 * 1024 * 1024 //100MB
+	MAX_FILE_COUNT  int   = 100               //100
+)
+
 type UnZipResult struct {
-	Files []UnZipFile `json:""`
+	Files []UnZipFile `json:"files"`
 }
 
 type UnZipFile struct {
@@ -30,7 +35,9 @@ type UnZipFile struct {
 }
 
 type UnZipper struct {
-	mac *digest.Mac
+	mac           *digest.Mac
+	maxFileLength int64
+	maxFileCount  int
 }
 
 func (this *UnZipper) parse(cmd string) (bucket string, overwrite bool, err error) {
@@ -64,6 +71,13 @@ func (this *UnZipper) parse(cmd string) (bucket string, overwrite bool, err erro
 }
 
 func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
+	//set zip file check criteria
+	if this.maxFileCount <= 0 {
+		this.maxFileCount = MAX_FILE_COUNT
+	}
+	if this.maxFileLength <= 0 {
+		this.maxFileLength = MAX_FILE_LENGTH
+	}
 	//check mimetype
 	if req.Src.MimeType != "application/zip" {
 		err = errors.New("unsupported mimetype to unzip")
@@ -120,6 +134,12 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 	unzipResult.Files = make([]UnZipFile, 0)
 
 	zipFiles := zipReader.File
+	//check file count
+	zipFileCount := len(zipFiles)
+	if zipFileCount > this.maxFileCount {
+		err = errors.New("zip files count exceeds the limit")
+		return
+	}
 	for _, zipFile := range zipFiles {
 		fileInfo := zipFile.FileHeader.FileInfo()
 		fileName := zipFile.FileHeader.Name
@@ -131,6 +151,12 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 
 		if fileInfo.IsDir() {
 			continue
+		}
+
+		//check file size
+		if fileSize > this.maxFileLength {
+			err = errors.New("zip file length exceeds the limit")
+			return
 		}
 
 		zipFileReader, zipErr := zipFile.Open()
@@ -146,6 +172,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 			return
 		}
 		unzipReader := bytes.NewReader(unzipData)
+
 		//save file to bucket
 		if overwrite {
 			policy.Scope = bucket + ":" + fileName

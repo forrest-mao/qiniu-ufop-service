@@ -28,6 +28,9 @@ type UfopConfig struct {
 	UfopPrefix string `json:"ufop_prefix"`
 	AccessKey  string `json:"access_key"`
 	SecretKey  string `json:"secret_key"`
+
+	UnzipMaxFileLength int64 `json:"unzip_max_file_length,omitempty"`
+	UnzipMaxFileCount  int   `json:"unzip_max_file_count,omitempty"`
 }
 
 func (this *UfopConfig) LoadFromFile(configFilePath string) (err error) {
