@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	MAX_FILE_LENGTH int64 = 100 * 1024 * 1024 //100MB
-	MAX_FILE_COUNT  int   = 100               //100
+	UNZIP_MAX_FILE_LENGTH int64 = 100 * 1024 * 1024 //100MB
+	UNZIP_MAX_FILE_COUNT  int   = 100               //100
 )
 
 type UnZipResult struct {
@@ -73,10 +73,10 @@ func (this *UnZipper) parse(cmd string) (bucket string, overwrite bool, err erro
 func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 	//set zip file check criteria
 	if this.maxFileCount <= 0 {
-		this.maxFileCount = MAX_FILE_COUNT
+		this.maxFileCount = UNZIP_MAX_FILE_COUNT
 	}
 	if this.maxFileLength <= 0 {
-		this.maxFileLength = MAX_FILE_LENGTH
+		this.maxFileLength = UNZIP_MAX_FILE_LENGTH
 	}
 	//check mimetype
 	if req.Src.MimeType != "application/zip" {
@@ -113,6 +113,23 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 		err = errors.New("invalid zip file")
 		return
 	}
+	zipFiles := zipReader.File
+	//check file count
+	zipFileCount := len(zipFiles)
+	if zipFileCount > this.maxFileCount {
+		err = errors.New("zip files count exceeds the limit")
+		return
+	}
+	//check file size
+	for _, zipFile := range zipFiles {
+		fileInfo := zipFile.FileHeader.FileInfo()
+		fileSize := fileInfo.Size()
+		//check file size
+		if fileSize > this.maxFileLength {
+			err = errors.New("zip file length exceeds the limit")
+			return
+		}
+	}
 
 	//parse zip
 	cd, cErr := iconv.Open("utf-8", "gbk")
@@ -133,13 +150,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 	var unzipResult UnZipResult
 	unzipResult.Files = make([]UnZipFile, 0)
 
-	zipFiles := zipReader.File
-	//check file count
-	zipFileCount := len(zipFiles)
-	if zipFileCount > this.maxFileCount {
-		err = errors.New("zip files count exceeds the limit")
-		return
-	}
+	//iterate the zip file
 	for _, zipFile := range zipFiles {
 		fileInfo := zipFile.FileHeader.FileInfo()
 		fileName := zipFile.FileHeader.Name
@@ -151,12 +162,6 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 
 		if fileInfo.IsDir() {
 			continue
-		}
-
-		//check file size
-		if fileSize > this.maxFileLength {
-			err = errors.New("zip file length exceeds the limit")
-			return
 		}
 
 		zipFileReader, zipErr := zipFile.Open()
