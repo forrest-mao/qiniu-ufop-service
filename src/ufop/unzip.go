@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	UNZIP_MAX_FILE_LENGTH int64 = 100 * 1024 * 1024 //100MB
-	UNZIP_MAX_FILE_COUNT  int   = 100               //100
+	UNZIP_MAX_ZIP_FILE_LENGTH int64 = 1 * 1024 * 1024 * 1024
+	UNZIP_MAX_FILE_LENGTH     int64 = 100 * 1024 * 1024 //100MB
+	UNZIP_MAX_FILE_COUNT      int   = 10                //10
 )
 
 type UnZipResult struct {
@@ -35,9 +36,10 @@ type UnZipFile struct {
 }
 
 type UnZipper struct {
-	mac           *digest.Mac
-	maxFileLength int64
-	maxFileCount  int
+	mac              *digest.Mac
+	maxZipFileLength int64
+	maxFileLength    int64
+	maxFileCount     int
 }
 
 func (this *UnZipper) parse(cmd string) (bucket string, overwrite bool, err error) {
@@ -78,9 +80,17 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 	if this.maxFileLength <= 0 {
 		this.maxFileLength = UNZIP_MAX_FILE_LENGTH
 	}
+	if this.maxZipFileLength <= 0 {
+		this.maxZipFileLength = UNZIP_MAX_ZIP_FILE_LENGTH
+	}
 	//check mimetype
 	if req.Src.MimeType != "application/zip" {
 		err = errors.New("unsupported mimetype to unzip")
+		return
+	}
+	//check zip file length
+	if req.Src.Fsize > this.maxZipFileLength {
+		err = errors.New("src zip file length exceeds the limit")
 		return
 	}
 
