@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"github.com/qiniu/api/auth/digest"
 	"github.com/qiniu/api/rs"
 	"io"
@@ -180,7 +179,6 @@ func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string
 	zipWriter := zip.NewWriter(zipBuffer)
 
 	for _, zipFile := range zipFiles {
-		fmt.Println(zipFile.url)
 		resp, respErr := http.Get(zipFile.url)
 		if respErr != nil {
 			err = errors.New("get zip file resource error")
