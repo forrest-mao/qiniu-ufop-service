@@ -177,7 +177,7 @@ func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string
 	var tErr error
 	zipBuffer := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(zipBuffer)
-
+	defer zipWriter.Close()
 	for _, zipFile := range zipFiles {
 		resp, respErr := http.Get(zipFile.url)
 		if respErr != nil {
