@@ -7,14 +7,14 @@ import (
 	"errors"
 	"github.com/qiniu/api/auth/digest"
 	"github.com/qiniu/api/rs"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 )
 
-//mkzip/bucket/xxx/encoding/[gbk|utf-8]/url/alias/url/alias
+//mkzip/bucket/xxx/encoding/[gbk|utf8]/url/alias/url/alias
 
 const (
 	MKZIP_MAX_FILE_LENGTH int64 = 100 * 1024 * 1024 //100MB
@@ -35,7 +35,7 @@ type ZipFile struct {
 }
 
 func (this *Mkziper) parse(cmd string) (bucket string, encoding string, zipFiles []ZipFile, err error) {
-	pattern := "^mkzip/bucket/[0-9a-zA-Z-_=]+/encoding/[0-9a-zA-Z-_=]+(/url/[0-9a-zA-Z-_=]+(/alias/[0-9a-zA-Z-_=]+){0,1})+$"
+	pattern := "^mkzip/bucket/[0-9a-zA-Z-_=]+(/encoding/[0-9a-zA-Z-_=]+){0,1}(/url/[0-9a-zA-Z-_=]+(/alias/[0-9a-zA-Z-_=]+){0,1})+$"
 	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
 		err = errors.New("invalid mkzip command format")
@@ -52,13 +52,16 @@ func (this *Mkziper) parse(cmd string) (bucket string, encoding string, zipFiles
 	bucket = string(bucketBytes)
 	//get encoding
 	encodingRegx := regexp.MustCompile("encoding/[0-9a-zA-Z-_=]+")
-	encodingPairItems := strings.Split(encodingRegx.FindString(cmd), "/")
-	encodingBytes, decodeErr := base64.URLEncoding.DecodeString(encodingPairItems[1])
-	if decodeErr != nil {
-		err = errors.New("invalid mkzip parameter 'encoding'")
-		return
+	encodingPair := encodingRegx.FindString(cmd)
+	if encodingPair != "" {
+		encodingPairItems := strings.Split(encodingPair, "/")
+		encodingBytes, decodeErr := base64.URLEncoding.DecodeString(encodingPairItems[1])
+		if decodeErr != nil {
+			err = errors.New("invalid mkzip parameter 'encoding'")
+			return
+		}
+		encoding = string(encodingBytes)
 	}
-	encoding = string(encodingBytes)
 	//get url & alias
 	urlAliasRegx := regexp.MustCompile("(url/[0-9a-zA-Z-_=]+(/alias/[0-9a-zA-Z-_=]+){0,1})")
 	urlAliasPairs := urlAliasRegx.FindAllString(cmd, -1)
@@ -177,15 +180,8 @@ func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string
 	var tErr error
 	zipBuffer := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(zipBuffer)
-	defer zipWriter.Close()
-	for _, zipFile := range zipFiles {
-		resp, respErr := http.Get(zipFile.url)
-		if respErr != nil {
-			err = errors.New("get zip file resource error")
-			return
-		}
-		defer resp.Body.Close()
 
+	for _, zipFile := range zipFiles {
 		//convert encoding
 		fname := zipFile.alias
 		if encoding == "gbk" {
@@ -195,18 +191,37 @@ func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string
 				return
 			}
 		}
+
+		//create each zip file writer
 		fw, fErr := zipWriter.Create(fname)
 		if fErr != nil {
 			err = errors.New("create zip file error")
 			return
 		}
-		_, wErr := io.Copy(fw, resp.Body)
-		if wErr != nil {
+		//read data and write
+		resp, respErr := http.Get(zipFile.url)
+		if respErr != nil {
+			err = errors.New("get zip file resource error")
+			return
+		}
+		respData, readErr := ioutil.ReadAll(resp.Body)
+		if readErr != nil {
+			err = errors.New("read zip file resource content error")
+			return
+		}
+		resp.Body.Close()
+
+		_, writeErr := fw.Write(respData)
+		if writeErr != nil {
 			err = errors.New("write zip file content error")
 			return
 		}
 	}
-
+	//close zip file
+	if cErr := zipWriter.Close(); cErr != nil {
+		err = errors.New("close zip file error")
+		return
+	}
 	result = zipBuffer.Bytes()
 	contentType = "application/octect-stream"
 	return
