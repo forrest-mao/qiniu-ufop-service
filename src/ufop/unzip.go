@@ -5,12 +5,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"github.com/qiniu/api/auth/digest"
 	fio "github.com/qiniu/api/io"
 	rio "github.com/qiniu/api/resumable/io"
 	"github.com/qiniu/api/rs"
-	"github.com/qiniu/iconv"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -72,7 +70,8 @@ func (this *UnZipper) parse(cmd string) (bucket string, overwrite bool, err erro
 	return
 }
 
-func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
+func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType string, err error) {
+	contentType = "application/json"
 	//set zip file check criteria
 	if this.maxFileCount <= 0 {
 		this.maxFileCount = UNZIP_MAX_FILE_COUNT
@@ -142,12 +141,6 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 	}
 
 	//parse zip
-	cd, cErr := iconv.Open("utf-8", "gbk")
-	if cErr != nil {
-		err = errors.New(fmt.Sprintf("create charset converter error"))
-		return
-	}
-	defer cd.Close()
 	rputSettings := rio.Settings{
 		ChunkSize: 4 * 1024 * 1024,
 		Workers:   1,
@@ -159,7 +152,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 	}
 	var unzipResult UnZipResult
 	unzipResult.Files = make([]UnZipFile, 0)
-
+	var tErr error
 	//iterate the zip file
 	for _, zipFile := range zipFiles {
 		fileInfo := zipFile.FileHeader.FileInfo()
@@ -167,7 +160,11 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 		fileSize := fileInfo.Size()
 
 		if !utf8.Valid([]byte(fileName)) {
-			fileName = cd.ConvString(fileName)
+			fileName, tErr = gbk2Utf8(fileName)
+			if tErr != nil {
+				err = errors.New("unsupported file name encoding")
+				return
+			}
 		}
 
 		if fileInfo.IsDir() {
@@ -215,5 +212,6 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, err error) {
 		}
 		unzipResult.Files = append(unzipResult.Files, unzipFile)
 	}
-	return unzipResult, err
+	result = unzipResult
+	return
 }

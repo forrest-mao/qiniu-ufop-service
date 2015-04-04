@@ -28,12 +28,10 @@ func main() {
 	}
 
 	//load config
-	var ufopConf *ufop.UfopConfig
-	ufopConf = &ufop.DefaultUfopConfig
-
+	ufopConf := &ufop.UfopConfig{}
 	confErr := ufopConf.LoadFromFile(configFilePath)
 	if confErr != nil {
-		log.Println("Load config file error,", confErr)
+		log.Println("load config file error,", confErr)
 		return
 	}
 

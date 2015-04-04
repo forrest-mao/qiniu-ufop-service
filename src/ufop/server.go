@@ -17,10 +17,11 @@ var (
 	ufopPrefix  string
 	jobHandlers map[string]UfopJobHandler
 	unzipper    *UnZipper
+	mkzipper    *Mkziper
 )
 
 type UfopJobHandler interface {
-	Do(ufopReq UfopRequest) (interface{}, error)
+	Do(ufopReq UfopRequest) (interface{}, string, error)
 }
 
 type UfopServer struct {
@@ -46,8 +47,14 @@ func (this *UfopServer) registerJobHandlers() {
 		maxFileLength: this.cfg.UnzipMaxFileLength,
 		maxFileCount:  this.cfg.UnzipMaxFileCount,
 	}
+	mkzipper = &Mkziper{
+		mac:           &mac,
+		maxFileLength: this.cfg.MkzipMaxFileLength,
+		maxFileCount:  this.cfg.MkzipMaxFileCount,
+	}
 
 	jobHandlers[ufopPrefix+"unzip"] = unzipper
+	jobHandlers[ufopPrefix+"mkzip"] = mkzipper
 }
 
 func (this *UfopServer) Listen() {
@@ -83,6 +90,7 @@ func serveUfop(w http.ResponseWriter, req *http.Request) {
 	var err error
 	var ufopReq UfopRequest
 	var ufopResult interface{}
+	var ufopResultContentType string
 
 	ufopReqData, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -96,16 +104,22 @@ func serveUfop(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ufopResult, err = handleJob(ufopReq)
+	ufopResult, ufopResultContentType, err = handleJob(ufopReq)
 	if err != nil {
 		writeJsonError(w, 400, err.Error())
 	} else {
-		writeJsonResult(w, 200, ufopResult)
+		switch ufopResultContentType {
+		case "application/json":
+			writeJsonResult(w, 200, ufopResult)
+		default:
+			writeOctetResult(w, 200, ufopResult)
+		}
 	}
 }
 
-func handleJob(ufopReq UfopRequest) (interface{}, error) {
+func handleJob(ufopReq UfopRequest) (interface{}, string, error) {
 	var ufopResult interface{}
+	var contentType string
 	var err error
 	cmd := ufopReq.Cmd
 
@@ -113,17 +127,21 @@ func handleJob(ufopReq UfopRequest) (interface{}, error) {
 	fop := items[0]
 	if jobHandler, ok := jobHandlers[fop]; ok {
 		ufopReq.Cmd = strings.TrimPrefix(ufopReq.Cmd, ufopPrefix)
-		ufopResult, err = jobHandler.Do(ufopReq)
+		ufopResult, contentType, err = jobHandler.Do(ufopReq)
 	} else {
 		err = errors.New("no fop available for the request")
 	}
-	return ufopResult, err
+	return ufopResult, contentType, err
 }
 
 func writeJsonError(w http.ResponseWriter, statusCode int, message string) {
 	log.Println(message)
 	w.WriteHeader(statusCode)
-	w.Header().Add("Content-Type", "application/json")
+	if w.Header().Get("Content-Type") != "" {
+		w.Header().Set("Content-Type", "application/json")
+	} else {
+		w.Header().Add("Content-Type", "application/json")
+	}
 	io.WriteString(w, fmt.Sprintf(`{"error": "%s"}`, message))
 }
 
@@ -132,9 +150,21 @@ func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) 
 	w.Header().Add("Content-Type", "application/json")
 	data, err := json.Marshal(result)
 	if err != nil {
-		log.Println("Encode ufop result error,", err)
-		writeJsonResult(w, 500, "Encode ufop result error")
+		log.Println("encode ufop result error,", err)
+		writeJsonError(w, 500, "encode ufop result error")
 	} else {
 		io.WriteString(w, string(data))
+	}
+}
+
+func writeOctetResult(w http.ResponseWriter, statusCode int, result interface{}) {
+	w.WriteHeader(statusCode)
+	w.Header().Add("Content-Type", "application/octet-stream")
+	if respData := result.([]byte); respData != nil {
+		_, err := w.Write(respData)
+		if err != nil {
+			log.Println("write response error", err)
+			writeJsonError(w, 500, "write response error")
+		}
 	}
 }

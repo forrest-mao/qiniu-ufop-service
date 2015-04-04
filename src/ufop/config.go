@@ -8,11 +8,11 @@ import (
 )
 
 //default ufop config
-var DefaultUfopConfig UfopConfig = UfopConfig{
+var defaultUfopConfig UfopConfig = UfopConfig{
 	ListenPort:     9100,
 	ListenHost:     "0.0.0.0",
-	ReadTimeout:    30,
-	WriteTimeout:   30,
+	ReadTimeout:    1800,
+	WriteTimeout:   1800,
 	MaxHeaderBytes: 1 << 16,
 }
 
@@ -20,8 +20,8 @@ type UfopConfig struct {
 	ListenPort int    `json:"listen_port,omitempty"`
 	ListenHost string `json:"listen_host,omitempty"`
 
-	ReadTimeout  int64 `json:"read_timeout,omitempty"`
-	WriteTimeout int64 `json:"write_timeout,omitempty"`
+	ReadTimeout  int `json:"read_timeout,omitempty"`
+	WriteTimeout int `json:"write_timeout,omitempty"`
 
 	MaxHeaderBytes int `json:"max_header_bytes,omitempty"`
 
@@ -49,6 +49,15 @@ func (this *UfopConfig) LoadFromFile(configFilePath string) (err error) {
 	decodeErr := decoder.Decode(this)
 	if decodeErr != nil {
 		err = errors.New(fmt.Sprintf("Parse ufop config failed, %s", decodeErr))
+	}
+	if this.ListenPort <= 0 {
+		this.ListenPort = defaultUfopConfig.ListenPort
+	}
+	if this.ReadTimeout <= 0 {
+		this.ReadTimeout = defaultUfopConfig.ReadTimeout
+	}
+	if this.WriteTimeout <= 0 {
+		this.WriteTimeout = defaultUfopConfig.WriteTimeout
 	}
 	return
 }
