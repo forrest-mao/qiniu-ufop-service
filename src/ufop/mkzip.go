@@ -96,17 +96,20 @@ func (this *Mkziper) parse(cmd string) (bucket string, encoding string, zipFiles
 		}
 		uri, parseErr := url.Parse(purl)
 		if parseErr != nil {
-			err = errors.New("invalid mkzip parameter 'url'")
+			err = errors.New("mkzip parameter 'url' format error")
 			return
 		}
-		if palias == "" {
-			path := uri.Path
-			ldx := strings.Index(path, "/")
-			if ldx != -1 {
-				palias = path[ldx+1:]
-				key = palias
+
+		//parse key
+		path := uri.Path
+		ldx := strings.Index(path, "/")
+		if ldx != -1 {
+			key = path[ldx+1:]
+			if palias == "" {
+				palias = key
 			}
 		}
+
 		if key == "" {
 			err = errors.New("invalid mkzip resource url")
 			return
