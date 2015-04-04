@@ -30,5 +30,11 @@ func utf82GBK(text string) (string, error) {
 		return "", err
 	}
 	gbkEncoder.Reset()
-	return string(gbkDst), nil
+	gbkBytes := make([]byte, 0)
+	for _, b := range gbkDst {
+		if b != 0 {
+			gbkBytes = append(gbkBytes, b)
+		}
+	}
+	return string(gbkBytes), nil
 }
