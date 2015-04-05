@@ -153,7 +153,11 @@ func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) 
 		log.Println("encode ufop result error,", err)
 		writeJsonError(w, 500, "encode ufop result error")
 	} else {
-		io.WriteString(w, string(data))
+		_, err := io.WriteString(w, string(data))
+		if err != nil {
+			log.Println("write json response error", err)
+			writeJsonError(w, 500, "write json response error")
+		}
 	}
 }
 
@@ -163,8 +167,8 @@ func writeOctetResult(w http.ResponseWriter, statusCode int, result interface{})
 	if respData := result.([]byte); respData != nil {
 		_, err := w.Write(respData)
 		if err != nil {
-			log.Println("write response error", err)
-			writeJsonError(w, 500, "write response error")
+			log.Println("write octect response error", err)
+			writeJsonError(w, 500, "write octect response error")
 		}
 	}
 }

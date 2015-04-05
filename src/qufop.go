@@ -14,6 +14,8 @@ qufop [<UfopConfig>]`)
 }
 
 func main() {
+	log.SetOutput(os.Stdout)
+
 	args := os.Args
 	argc := len(args)
 
