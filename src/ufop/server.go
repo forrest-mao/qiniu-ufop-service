@@ -107,6 +107,12 @@ func serveUfop(w http.ResponseWriter, req *http.Request) {
 
 	ufopResult, ufopResultContentType, err = handleJob(ufopReq)
 	if err != nil {
+		ufopErr := UfopError{
+			Request: ufopReq,
+			Error:   err.Error(),
+		}
+		logBytes, _ := json.Marshal(&ufopErr)
+		log.Println(string(logBytes))
 		writeJsonError(w, 400, err.Error())
 	} else {
 		switch ufopResultContentType {
@@ -136,7 +142,6 @@ func handleJob(ufopReq UfopRequest) (interface{}, string, error) {
 }
 
 func writeJsonError(w http.ResponseWriter, statusCode int, message string) {
-	log.Println(message)
 	w.WriteHeader(statusCode)
 	if w.Header().Get("Content-Type") != "" {
 		w.Header().Set("Content-Type", "application/json")

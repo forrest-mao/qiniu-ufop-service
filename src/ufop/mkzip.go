@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"github.com/qiniu/api/auth/digest"
 	"github.com/qiniu/api/rs"
 	"io/ioutil"
@@ -166,16 +167,16 @@ func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string
 
 	statRet, statErr := qclient.BatchStat(nil, statItems)
 	if statErr != nil {
-		err = errors.New("batch stat error")
+		err = errors.New(fmt.Sprintf("batch stat error, %s", statErr))
 		return
 	}
 	for _, ret := range statRet {
 		if ret.Error != "" {
-			err = errors.New("stat resource in bucket error")
+			err = errors.New(fmt.Sprintf("stat resource in bucket error, %s", ret.Error))
 			return
 		}
 		if ret.Data.Fsize > this.maxFileLength {
-			err = errors.New("stat resource length exceeds the limit")
+			err = errors.New(fmt.Sprintf("stat resource length exceeds the limit, %d", ret.Data.Fsize))
 			return
 		}
 	}
@@ -190,7 +191,7 @@ func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string
 		if encoding == "gbk" {
 			fname, tErr = utf82GBK(fname)
 			if tErr != nil {
-				err = errors.New("unsupported encoding gbk")
+				err = errors.New(fmt.Sprintf("unsupported encoding gbk, %s", tErr))
 				return
 			}
 		}
@@ -198,31 +199,31 @@ func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string
 		//create each zip file writer
 		fw, fErr := zipWriter.Create(fname)
 		if fErr != nil {
-			err = errors.New("create zip file error")
+			err = errors.New(fmt.Sprintf("create zip file error, %s", fErr))
 			return
 		}
 		//read data and write
 		resp, respErr := http.Get(zipFile.url)
 		if respErr != nil {
-			err = errors.New("get zip file resource error")
+			err = errors.New(fmt.Sprintf("get zip file resource error, %s", respErr))
 			return
 		}
 		respData, readErr := ioutil.ReadAll(resp.Body)
 		if readErr != nil {
-			err = errors.New("read zip file resource content error")
+			err = errors.New(fmt.Sprintf("read zip file resource content error, %s", readErr))
 			return
 		}
 		resp.Body.Close()
 
 		_, writeErr := fw.Write(respData)
 		if writeErr != nil {
-			err = errors.New("write zip file content error")
+			err = errors.New(fmt.Sprintf("write zip file content error, %s", writeErr))
 			return
 		}
 	}
 	//close zip file
 	if cErr := zipWriter.Close(); cErr != nil {
-		err = errors.New("close zip file error")
+		err = errors.New(fmt.Sprintf("close zip file error, %s", cErr))
 		return
 	}
 	result = zipBuffer.Bytes()

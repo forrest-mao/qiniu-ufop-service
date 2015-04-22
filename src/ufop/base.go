@@ -10,3 +10,8 @@ type UfopRequestSrc struct {
 	MimeType string `json:"mimetype"`
 	Fsize    int64  `json:"fsize"`
 }
+
+type UfopError struct {
+	Request UfopRequest
+	Error   string
+}
