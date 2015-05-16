@@ -44,7 +44,7 @@ unzip/bucket/<encoded bucket>/prefix/<encoded prefix>/overwrite/<[0|1]>
 
 */
 func (this *UnZipper) parse(cmd string) (bucket string, prefix string, overwrite bool, err error) {
-	pattern := "^unzip/bucket/[0-9a-zA-Z-_=]+/prefix/[0-9a-zA-Z-_=]+(/overwrite/(0|1)){0,1}$"
+	pattern := "^unzip/bucket/[0-9a-zA-Z-_=]+(/prefix/[0-9a-zA-Z-_=]+){0,1}(/overwrite/(0|1)){0,1}$"
 	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
 		err = errors.New("invalid unzip command format")
