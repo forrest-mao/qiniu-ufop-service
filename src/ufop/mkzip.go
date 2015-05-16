@@ -46,29 +46,22 @@ func (this *Mkziper) parse(cmd string) (bucket string, encoding string, zipFiles
 		err = errors.New("invalid mkzip command format")
 		return
 	}
+
+	var decodeErr error
 	//get bucket
-	bucketRegx := regexp.MustCompile("bucket/[0-9a-zA-Z-_=]+")
-	bucketPairItems := strings.Split(bucketRegx.FindString(cmd), "/")
-	bucketBytes, decodeErr := base64.URLEncoding.DecodeString(bucketPairItems[1])
+	bucket, decodeErr = getParamDecoded(cmd, "bucket/[0-9a-zA-Z-_=]+", "bucket")
 	if decodeErr != nil {
 		err = errors.New("invalid mkzip paramter 'bucket'")
 		return
 	}
-	bucket = string(bucketBytes)
 	//get encoding
-	encodingRegx := regexp.MustCompile("encoding/[0-9a-zA-Z-_=]+")
-	encodingPair := encodingRegx.FindString(cmd)
-	if encodingPair != "" {
-		encodingPairItems := strings.Split(encodingPair, "/")
-		encodingBytes, decodeErr := base64.URLEncoding.DecodeString(encodingPairItems[1])
-		if decodeErr != nil {
-			err = errors.New("invalid mkzip parameter 'encoding'")
-			return
-		}
-		encoding = string(encodingBytes)
+	encoding, decodeErr = getParamDecoded(cmd, "encoding/[0-9a-zA-Z-_=]+", "encoding")
+	if decodeErr != nil {
+		err = errors.New("invalid mkzip parameter 'encoding'")
+		return
 	}
 	//get url & alias
-	urlAliasRegx := regexp.MustCompile("(url/[0-9a-zA-Z-_=]+(/alias/[0-9a-zA-Z-_=]+){0,1})")
+	urlAliasRegx := regexp.MustCompile("url/[0-9a-zA-Z-_=]+(/alias/[0-9a-zA-Z-_=]+){0,1}")
 	urlAliasPairs := urlAliasRegx.FindAllString(cmd, -1)
 	paliasMap := make(map[string]string, 0)
 	for _, urlAliasPair := range urlAliasPairs {
