@@ -15,8 +15,12 @@ import (
 	"strings"
 )
 
-//mkzip/bucket/xxx/encoding/[gbk|utf8]/url/alias/url/alias
+/*
 
+mkzip/bucket/<encoded bucket>/encoding/<encoded encoding[gbk|utf8]>
+/url/<encoded url>/alias/<encoded alias>/url/<encoded url>/alias/<encoded alias>
+
+*/
 const (
 	MKZIP_MAX_FILE_LENGTH int64 = 100 * 1024 * 1024 //100MB
 	MKZIP_MAX_FILE_COUNT  int   = 100               //100
