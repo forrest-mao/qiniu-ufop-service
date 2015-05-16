@@ -40,11 +40,11 @@ type UnZipper struct {
 
 /*
 
-unzip/bucket/<encoded bucket>/overwrite/<[0|1]>
+unzip/bucket/<encoded bucket>/prefix/<encoded prefix>/overwrite/<[0|1]>
 
 */
-func (this *UnZipper) parse(cmd string) (bucket string, overwrite bool, err error) {
-	pattern := "^unzip/bucket/[0-9a-zA-Z-_=]+(/overwrite/(0|1)){0,1}$"
+func (this *UnZipper) parse(cmd string) (bucket string, prefix string, overwrite bool, err error) {
+	pattern := "^unzip/bucket/[0-9a-zA-Z-_=]+/prefix/[0-9a-zA-Z-_=]+(/overwrite/(0|1)){0,1}$"
 	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
 		err = errors.New("invalid unzip command format")
@@ -55,6 +55,11 @@ func (this *UnZipper) parse(cmd string) (bucket string, overwrite bool, err erro
 	bucket, decodeErr = getParamDecoded(cmd, "bucket/[0-9a-zA-Z-_=]+", "bucket")
 	if decodeErr != nil {
 		err = errors.New("invalid unzip parameter 'bucket'")
+		return
+	}
+	prefix, decodeErr = getParamDecoded(cmd, "prefix/[0-9a-zA-Z-_=]+", "prefix")
+	if decodeErr != nil {
+		err = errors.New("invalid unzip parameter 'prefix'")
 		return
 	}
 	overwriteStr := getParam(cmd, "overwrite/(0|1)", "overwrite")
@@ -95,7 +100,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 	}
 
 	//parse command
-	bucket, overwrite, pErr := this.parse(req.Cmd)
+	bucket, prefix, overwrite, pErr := this.parse(req.Cmd)
 	if pErr != nil {
 		err = pErr
 		return
@@ -188,6 +193,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 		unzipReader := bytes.NewReader(unzipData)
 
 		//save file to bucket
+		fileName = prefix + fileName
 		if overwrite {
 			policy.Scope = bucket + ":" + fileName
 		}
