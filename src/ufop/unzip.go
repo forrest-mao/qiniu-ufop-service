@@ -40,8 +40,13 @@ type UnZipper struct {
 	maxFileCount     int
 }
 
+/*
+
+unzip/bucket/<encoded bucket>/overwrite/<[0|1]>
+
+*/
 func (this *UnZipper) parse(cmd string) (bucket string, overwrite bool, err error) {
-	pattern := "^unzip/bucket/[0-9a-zA-Z-_=]+(/overwrite/[0|1]){0,1}$"
+	pattern := "^unzip/bucket/[0-9a-zA-Z-_=]+(/overwrite/(0|1){0,1}$"
 	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
 		err = errors.New("invalid unzip command format")
