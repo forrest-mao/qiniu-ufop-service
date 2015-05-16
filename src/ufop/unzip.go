@@ -3,7 +3,6 @@ package ufop
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/base64"
 	"errors"
 	"github.com/qiniu/api/auth/digest"
 	fio "github.com/qiniu/api/io"
@@ -13,7 +12,6 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 	"unicode/utf8"
 )
 
@@ -46,24 +44,22 @@ unzip/bucket/<encoded bucket>/overwrite/<[0|1]>
 
 */
 func (this *UnZipper) parse(cmd string) (bucket string, overwrite bool, err error) {
-	pattern := "^unzip/bucket/[0-9a-zA-Z-_=]+(/overwrite/(0|1){0,1}$"
+	pattern := "^unzip/bucket/[0-9a-zA-Z-_=]+(/overwrite/(0|1)){0,1}$"
 	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
 		err = errors.New("invalid unzip command format")
 		return
 	}
-	items := strings.Split(cmd, "/")
 
-	if len(items) >= 3 {
-		bucketBytes, paramErr := base64.URLEncoding.DecodeString(items[2])
-		if paramErr != nil {
-			err = errors.New("invalid unzip parameter 'bucket'")
-			return
-		}
-		bucket = string(bucketBytes)
+	var decodeErr error
+	bucket, decodeErr = getParamDecoded(cmd, "bucket/[0-9a-zA-Z-_=]+", "bucket")
+	if decodeErr != nil {
+		err = errors.New("invalid unzip parameter 'bucket'")
+		return
 	}
-	if len(items) == 5 {
-		overwriteVal, paramErr := strconv.ParseInt(items[4], 10, 64)
+	overwriteStr := getParam(cmd, "overwrite/(0|1)", "overwrite")
+	if overwriteStr != "" {
+		overwriteVal, paramErr := strconv.ParseInt(overwriteStr, 10, 64)
 		if paramErr != nil {
 			err = errors.New("invalid unzip parameter 'overwrite'")
 			return
@@ -108,7 +104,8 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 	//get resource
 	resUrl := req.Src.Url
 	resResp, respErr := http.Get(resUrl)
-	if respErr != nil {
+	if respErr != nil || resResp.StatusCode != 200 {
+		resResp.Body.Close()
 		err = errors.New("retrieve resource data failed")
 		return
 	}
