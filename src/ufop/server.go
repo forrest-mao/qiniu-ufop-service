@@ -18,6 +18,7 @@ var (
 	jobHandlers map[string]UfopJobHandler
 	unzipper    *UnZipper
 	mkzipper    *Mkziper
+	amerger     *AudioMerger
 )
 
 type UfopJobHandler interface {
@@ -48,14 +49,22 @@ func (this *UfopServer) registerJobHandlers() {
 		maxFileLength:    this.cfg.UnzipMaxFileLength,
 		maxFileCount:     this.cfg.UnzipMaxFileCount,
 	}
+	//mkzipper
 	mkzipper = &Mkziper{
 		mac:           &mac,
 		maxFileLength: this.cfg.MkzipMaxFileLength,
 		maxFileCount:  this.cfg.MkzipMaxFileCount,
 	}
+	//audio merger
+	amerger = &AudioMerger{
+		mac:                 &mac,
+		maxFirstFileLength:  this.cfg.AmergeMaxFirstFileLength,
+		maxSecondFileLength: this.cfg.AmergeMaxSecondFileLength,
+	}
 
 	jobHandlers[ufopPrefix+"unzip"] = unzipper
 	jobHandlers[ufopPrefix+"mkzip"] = mkzipper
+	jobHandlers[ufopPrefix+"amerge"] = amerger
 }
 
 func (this *UfopServer) Listen() {
@@ -162,7 +171,6 @@ func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) 
 		_, err := io.WriteString(w, string(data))
 		if err != nil {
 			log.Println("write json response error", err)
-			writeJsonError(w, 500, "write json response error")
 		}
 	}
 }
@@ -174,7 +182,6 @@ func writeOctetResult(w http.ResponseWriter, statusCode int, result interface{})
 		_, err := w.Write(respData)
 		if err != nil {
 			log.Println("write octect response error", err)
-			writeJsonError(w, 500, "write octect response error")
 		}
 	}
 }

@@ -35,6 +35,9 @@ type UfopConfig struct {
 
 	MkzipMaxFileLength int64 `json:"mkzip_max_file_length,omitempty"`
 	MkzipMaxFileCount  int   `json:"mkzip_max_file_count,omitempty"`
+
+	AmergeMaxFirstFileLength  int64 `json:"amerge_max_first_file_length,omitempty"`
+	AmergeMaxSecondFileLength int64 `json:"amerge_max_second_file_length,omitempty"`
 }
 
 func (this *UfopConfig) LoadFromFile(configFilePath string) (err error) {
