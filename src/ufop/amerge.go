@@ -29,12 +29,12 @@ type AudioMerger struct {
 
 /*
 
-amerge/format/<format>/bucket/<encoded bucket>/url/<encoded url>/duration/<[first|second]>
+amerge/format/<format>/mime/<encoded mime>/bucket/<encoded bucket>/url/<encoded url>/duration/<[first|second]>
 
 */
 
-func (this *AudioMerger) parse(cmd string) (format string, bucket string, url string, duration string, err error) {
-	pattern := "^amerge/format/[a-zA-Z0-9]+/bucket/[0-9a-zA-Z-_=]+/url/[0-9a-zA-Z-_=]+(/duration/(first|second)){0,1}$"
+func (this *AudioMerger) parse(cmd string) (format string, mime string, bucket string, url string, duration string, err error) {
+	pattern := "^amerge/format/[a-zA-Z0-9]+/mime/[0-9a-zA-Z-_=]+/bucket/[0-9a-zA-Z-_=]+/url/[0-9a-zA-Z-_=]+(/duration/(first|second)){0,1}$"
 	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
 		err = errors.New("invalid amerge command format")
@@ -43,18 +43,21 @@ func (this *AudioMerger) parse(cmd string) (format string, bucket string, url st
 
 	var decodeErr error
 	format = getParam(cmd, "format/[a-zA-Z0-9]+", "format")
+	mime, decodeErr = getParamDecoded(cmd, "mime/[0-9a-zA-Z-_=]+", "mime")
+	if decodeErr != nil {
+		err = errors.New("invalid amerge parameter 'mime'")
+		return
+	}
 	bucket, decodeErr = getParamDecoded(cmd, "bucket/[0-9a-zA-Z-_=]+", "bucket")
 	if decodeErr != nil {
 		err = errors.New("invalid amerge parameter 'bucket'")
 		return
 	}
-
 	url, decodeErr = getParamDecoded(cmd, "url/[0-9a-zA-Z-_=]+", "url")
 	if decodeErr != nil {
 		err = errors.New("invalid amerge parameter 'url'")
 		return
 	}
-
 	duration = getParam(cmd, "duration/(first|second)", "duration")
 	if duration == "" {
 		duration = "first"
@@ -81,7 +84,7 @@ func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType st
 		return
 	}
 	//parse command
-	dstFormat, secondFileBucket, secondFileUrl, dstDuration, pErr := this.parse(req.Cmd)
+	dstFormat, dstMime, secondFileBucket, secondFileUrl, dstDuration, pErr := this.parse(req.Cmd)
 	if pErr != nil {
 		err = pErr
 		return
@@ -214,6 +217,6 @@ func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType st
 			err = errors.New("audio merge with not output result")
 		}
 	}
-	contentType = "application/octect-stream"
+	contentType = dstMime
 	return
 }
