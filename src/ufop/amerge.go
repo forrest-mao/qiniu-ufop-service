@@ -129,7 +129,7 @@ func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType st
 	fTmpFp.Close()
 	fResp.Body.Close()
 
-	sResp, sRespErr := http.Get(req.Src.Url)
+	sResp, sRespErr := http.Get(secondFileUrl)
 	if sRespErr != nil || sResp.StatusCode != 200 {
 		sResp.Body.Close()
 		err = errors.New("retrieve second file resource data failed")
