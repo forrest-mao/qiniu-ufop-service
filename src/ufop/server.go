@@ -128,7 +128,7 @@ func serveUfop(w http.ResponseWriter, req *http.Request) {
 		case "application/json":
 			writeJsonResult(w, 200, ufopResult)
 		default:
-			writeOctetResult(w, 200, ufopResult)
+			writeOctetResultWithMime(w, 200, ufopResult, ufopResultContentType)
 		}
 	}
 }
@@ -175,9 +175,9 @@ func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) 
 	}
 }
 
-func writeOctetResult(w http.ResponseWriter, statusCode int, result interface{}) {
+func writeOctetResultWithMime(w http.ResponseWriter, statusCode int, result interface{}, mimeType string) {
 	w.WriteHeader(statusCode)
-	w.Header().Add("Content-Type", "application/octet-stream")
+	w.Header().Add("Content-Type", mimeType)
 	if respData := result.([]byte); respData != nil {
 		_, err := w.Write(respData)
 		if err != nil {
