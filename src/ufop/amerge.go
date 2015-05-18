@@ -29,12 +29,12 @@ type AudioMerger struct {
 
 /*
 
-amerge/format/<format>/mime/<encoded mime>/bucket/<encoded bucket>/url/<encoded url>/duration/<[first|second]>
+amerge/format/<format>/mime/<encoded mime>/bucket/<encoded bucket>/url/<encoded url>/duration/<[first|shortest|longest]>
 
 */
 
 func (this *AudioMerger) parse(cmd string) (format string, mime string, bucket string, url string, duration string, err error) {
-	pattern := "^amerge/format/[a-zA-Z0-9]+/mime/[0-9a-zA-Z-_=]+/bucket/[0-9a-zA-Z-_=]+/url/[0-9a-zA-Z-_=]+(/duration/(first|second)){0,1}$"
+	pattern := "^amerge/format/[a-zA-Z0-9]+/mime/[0-9a-zA-Z-_=]+/bucket/[0-9a-zA-Z-_=]+/url/[0-9a-zA-Z-_=]+(/duration/(first|shortest|longest)){0,1}$"
 	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
 		err = errors.New("invalid amerge command format")
@@ -58,9 +58,9 @@ func (this *AudioMerger) parse(cmd string) (format string, mime string, bucket s
 		err = errors.New("invalid amerge parameter 'url'")
 		return
 	}
-	duration = getParam(cmd, "duration/(first|second)", "duration")
+	duration = getParam(cmd, "duration/(first|shortest|longest)", "duration")
 	if duration == "" {
-		duration = "first"
+		duration = "longest"
 	}
 	return
 }
