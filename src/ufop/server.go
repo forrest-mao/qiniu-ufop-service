@@ -171,7 +171,9 @@ func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) 
 }
 
 func writeOctetResultWithMime(w http.ResponseWriter, statusCode int, result interface{}, mimeType string) {
-	w.Header().Set("Content-Type", mimeType)
+	if mimeType != "" {
+		w.Header().Set("Content-Type", mimeType)
+	}
 	if respData := result.([]byte); respData != nil {
 		_, err := w.Write(respData)
 		if err != nil {
