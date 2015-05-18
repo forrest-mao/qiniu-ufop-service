@@ -151,18 +151,13 @@ func handleJob(ufopReq UfopRequest) (interface{}, string, error) {
 }
 
 func writeJsonError(w http.ResponseWriter, statusCode int, message string) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	if w.Header().Get("Content-Type") != "" {
-		w.Header().Set("Content-Type", "application/json")
-	} else {
-		w.Header().Add("Content-Type", "application/json")
-	}
 	io.WriteString(w, fmt.Sprintf(`{"error": "%s"}`, message))
 }
 
 func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) {
-	w.WriteHeader(statusCode)
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	data, err := json.Marshal(result)
 	if err != nil {
 		log.Println("encode ufop result error,", err)
@@ -176,8 +171,7 @@ func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) 
 }
 
 func writeOctetResultWithMime(w http.ResponseWriter, statusCode int, result interface{}, mimeType string) {
-	w.WriteHeader(statusCode)
-	w.Header().Add("Content-Type", mimeType)
+	w.Header().Set("Content-Type", mimeType)
 	if respData := result.([]byte); respData != nil {
 		_, err := w.Write(respData)
 		if err != nil {
