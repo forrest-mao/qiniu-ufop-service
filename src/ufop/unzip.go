@@ -110,15 +110,17 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 	resUrl := req.Src.Url
 	resResp, respErr := http.Get(resUrl)
 	if respErr != nil || resResp.StatusCode != 200 {
-		resResp.Body.Close()
-		err = errors.New("retrieve resource data failed")
+		if resResp.Body != nil {
+			resResp.Body.Close()
+		}
+		err = errors.New("retrieve resource data failed, " + respErr.Error())
 		return
 	}
 	defer resResp.Body.Close()
 
-	respData, respErr := ioutil.ReadAll(resResp.Body)
-	if respErr != nil {
-		err = errors.New("read resource data failed")
+	respData, readErr := ioutil.ReadAll(resResp.Body)
+	if readErr != nil {
+		err = errors.New("read resource data failed, " + readErr.Error())
 		return
 	}
 
@@ -126,7 +128,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 	respReader := bytes.NewReader(respData)
 	zipReader, zipErr := zip.NewReader(respReader, int64(respReader.Len()))
 	if zipErr != nil {
-		err = errors.New("invalid zip file")
+		err = errors.New("invalid zip file, " + zipErr.Error())
 		return
 	}
 	zipFiles := zipReader.File
@@ -169,7 +171,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 		if !utf8.Valid([]byte(fileName)) {
 			fileName, tErr = gbk2Utf8(fileName)
 			if tErr != nil {
-				err = errors.New("unsupported file name encoding")
+				err = errors.New("unsupported file name encoding, " + tErr.Error())
 				return
 			}
 		}
@@ -180,14 +182,14 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 
 		zipFileReader, zipErr := zipFile.Open()
 		if zipErr != nil {
-			err = errors.New("open zip file content failed")
+			err = errors.New("open zip file content failed, " + zipErr.Error())
 			return
 		}
 		defer zipFileReader.Close()
 
 		unzipData, unzipErr := ioutil.ReadAll(zipFileReader)
 		if unzipErr != nil {
-			err = errors.New("unzip the file content failed")
+			err = errors.New("unzip the file content failed, " + unzipErr.Error())
 			return
 		}
 		unzipReader := bytes.NewReader(unzipData)
@@ -204,7 +206,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 			var fputRet fio.PutRet
 			fErr := fio.Put(nil, &fputRet, uptoken, fileName, unzipReader, nil)
 			if fErr != nil {
-				unzipFile.Error = "save unzip file to bucket error"
+				unzipFile.Error = "save unzip file to bucket error, " + fErr.Error()
 			} else {
 				unzipFile.Hash = fputRet.Hash
 			}
@@ -213,7 +215,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 			var rputRet rio.PutRet
 			rErr := rio.Put(nil, &rputRet, uptoken, fileName, unzipReader, fileSize, nil)
 			if rErr != nil {
-				unzipFile.Error = "save unzip file to bucket error"
+				unzipFile.Error = "save unzip file to bucket error, " + rErr.Error()
 			} else {
 				unzipFile.Hash = rputRet.Hash
 			}

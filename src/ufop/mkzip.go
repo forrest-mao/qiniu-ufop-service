@@ -201,7 +201,10 @@ func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string
 		}
 		//read data and write
 		resp, respErr := http.Get(zipFile.url)
-		if respErr != nil {
+		if respErr != nil || resp.StatusCode != 200 {
+			if resp.Body != nil {
+				resp.Body.Close()
+			}
 			err = errors.New(fmt.Sprintf("get zip file resource error, %s", respErr))
 			return
 		}
@@ -224,6 +227,6 @@ func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string
 		return
 	}
 	result = zipBuffer.Bytes()
-	contentType = "application/octect-stream"
+	contentType = "application/zip"
 	return
 }
