@@ -128,7 +128,7 @@ func (this *Mkziper) parse(cmd string) (bucket string, encoding string, zipFiles
 }
 
 func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string, err error) {
-	contentType = "application/json"
+	contentType = "text/plain"
 	//set mkzip check criteria
 	if this.maxFileCount <= 0 {
 		this.maxFileCount = MKZIP_MAX_FILE_COUNT
@@ -200,20 +200,24 @@ func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string
 			return
 		}
 		//read data and write
-		resp, respErr := http.Get(zipFile.url)
-		if respErr != nil || resp.StatusCode != 200 {
-			if resp.Body != nil {
-				resp.Body.Close()
+		resResp, respErr := http.Get(zipFile.url)
+		if respErr != nil || resResp.StatusCode != 200 {
+			if respErr != nil {
+				err = errors.New("get zip file resource error, " + respErr.Error())
+			} else {
+				err = errors.New(fmt.Sprintf("get zip file resource error, %s", resResp.Status))
+				if resResp.Body != nil {
+					resResp.Body.Close()
+				}
 			}
-			err = errors.New(fmt.Sprintf("get zip file resource error, %s", respErr))
 			return
 		}
-		respData, readErr := ioutil.ReadAll(resp.Body)
+		respData, readErr := ioutil.ReadAll(resResp.Body)
 		if readErr != nil {
 			err = errors.New(fmt.Sprintf("read zip file resource content error, %s", readErr))
 			return
 		}
-		resp.Body.Close()
+		resResp.Body.Close()
 
 		_, writeErr := fw.Write(respData)
 		if writeErr != nil {

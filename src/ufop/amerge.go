@@ -66,7 +66,7 @@ func (this *AudioMerger) parse(cmd string) (format string, mime string, bucket s
 }
 
 func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType string, err error) {
-	contentType = "application/json"
+	contentType = "text/plain"
 	//check first file &second file length criteria
 	if this.maxFirstFileLength <= 0 {
 		this.maxFirstFileLength = AUDIO_MERGE_MAX_FIRST_FILE_LENGTH
@@ -114,20 +114,25 @@ func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType st
 	//download first and second file
 	fResp, fRespErr := http.Get(req.Src.Url)
 	if fRespErr != nil || fResp.StatusCode != 200 {
-		if fResp.Body != nil {
-			fResp.Body.Close()
+		if fRespErr != nil {
+			err = errors.New(fmt.Sprintf("retrieve first file resource data failed, %s", fRespErr.Error()))
+		} else {
+			err = errors.New(fmt.Sprintf("retrieve first file resource data failed, %s", fResp.Status))
+			if fResp.Body != nil {
+				fResp.Body.Close()
+			}
 		}
-		err = errors.New("retrieve first file resource data failed, " + fRespErr.Error())
 		return
 	}
+
 	fTmpFp, fErr := ioutil.TempFile("", "first")
 	if fErr != nil {
-		err = errors.New("open first file temp file failed, " + fErr.Error())
+		err = errors.New(fmt.Sprintf("open first file temp file failed, %s", fErr.Error()))
 		return
 	}
 	_, fCpErr := io.Copy(fTmpFp, fResp.Body)
 	if fCpErr != nil {
-		err = errors.New("save first temp file failed, " + fCpErr.Error())
+		err = errors.New(fmt.Sprintf("save first temp file failed, %s", fCpErr.Error()))
 		return
 	}
 	//close first one
@@ -137,20 +142,24 @@ func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType st
 
 	sResp, sRespErr := http.Get(secondFileUrl)
 	if sRespErr != nil || sResp.StatusCode != 200 {
-		if sResp.Body != nil {
-			sResp.Body.Close()
+		if sRespErr != nil {
+			err = errors.New(fmt.Sprintf("retrieve second file resource data failed, %s", sRespErr.Error()))
+		} else {
+			err = errors.New(fmt.Sprintf("retrieve second file resource data failed, %s", sResp.Status))
+			if sResp.Body != nil {
+				sResp.Body.Close()
+			}
 		}
-		err = errors.New("retrieve second file resource data failed, " + sRespErr.Error())
 		return
 	}
 	sTmpFp, sErr := ioutil.TempFile("", "second")
 	if sErr != nil {
-		err = errors.New("open second file temp file failed, " + sErr.Error())
+		err = errors.New(fmt.Sprintf("open second file temp file failed, %s", sErr.Error()))
 		return
 	}
 	_, sCpErr := io.Copy(sTmpFp, sResp.Body)
 	if sCpErr != nil {
-		err = errors.New("save second first tmp file failed, " + sCpErr.Error())
+		err = errors.New(fmt.Sprintf("save second first tmp file failed, %s", sCpErr.Error()))
 		return
 	}
 	//close second one
@@ -161,7 +170,7 @@ func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType st
 	//do conversion
 	oTmpFp, oErr := ioutil.TempFile("", "output")
 	if oErr != nil {
-		err = errors.New("open output file temp file failed, " + oErr.Error())
+		err = errors.New(fmt.Sprintf("open output file temp file failed, %s", oErr.Error()))
 		return
 	}
 	oTmpFname := oTmpFp.Name()
@@ -184,20 +193,20 @@ func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType st
 	mergeCmd := exec.Command("ffmpeg", mergeCmdParams...)
 	stdErrPipe, pipeErr := mergeCmd.StderrPipe()
 	if pipeErr != nil {
-		err = errors.New("open exec stderr pipe error, " + pipeErr.Error())
+		err = errors.New(fmt.Sprintf("open exec stderr pipe error, %s", pipeErr.Error()))
 		return
 	}
 	if startErr := mergeCmd.Start(); startErr != nil {
-		err = errors.New("start ffmpeg command error, " + startErr.Error())
+		err = errors.New(fmt.Sprintf("start ffmpeg command error, %s", startErr.Error()))
 		return
 	}
 	stdErrData, readErr := ioutil.ReadAll(stdErrPipe)
 	if readErr != nil {
-		err = errors.New("read ffmpeg command stderr error, " + readErr.Error())
+		err = errors.New(fmt.Sprintf("read ffmpeg command stderr error, %s", readErr.Error()))
 		return
 	}
 	if waitErr := mergeCmd.Wait(); waitErr != nil {
-		err = errors.New("wait ffmpeg to exit error")
+		err = errors.New(fmt.Sprintf("wait ffmpeg to exit error, %s", waitErr))
 		return
 	}
 	//check stderr output & output file
@@ -208,13 +217,13 @@ func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType st
 		if oFileInfo.Size() > 0 {
 			oTmpFp, openErr := os.Open(oTmpFname)
 			if openErr != nil {
-				err = errors.New("open ffmpeg output result error, " + openErr.Error())
+				err = errors.New(fmt.Sprintf("open ffmpeg output result error, %s", openErr.Error()))
 				return
 			}
 			defer oTmpFp.Close()
 			outputBytes, readErr := ioutil.ReadAll(oTmpFp)
 			if readErr != nil {
-				err = errors.New("read ffmpeg output result error, " + readErr.Error())
+				err = errors.New(fmt.Sprintf("read ffmpeg output result error, %s", readErr.Error()))
 				return
 			}
 			result = outputBytes
