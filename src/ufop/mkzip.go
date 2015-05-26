@@ -128,7 +128,6 @@ func (this *Mkziper) parse(cmd string) (bucket string, encoding string, zipFiles
 }
 
 func (this *Mkziper) Do(req UfopRequest) (result interface{}, contentType string, err error) {
-	contentType = "text/plain"
 	//set mkzip check criteria
 	if this.maxFileCount <= 0 {
 		this.maxFileCount = MKZIP_MAX_FILE_COUNT

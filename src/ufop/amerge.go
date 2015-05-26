@@ -66,7 +66,6 @@ func (this *AudioMerger) parse(cmd string) (format string, mime string, bucket s
 }
 
 func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType string, err error) {
-	contentType = "text/plain"
 	//check first file &second file length criteria
 	if this.maxFirstFileLength <= 0 {
 		this.maxFirstFileLength = AUDIO_MERGE_MAX_FIRST_FILE_LENGTH

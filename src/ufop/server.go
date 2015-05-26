@@ -92,7 +92,7 @@ func (this *UfopServer) Listen() {
 func serveUfop(w http.ResponseWriter, req *http.Request) {
 	//check method
 	if req.Method != "POST" {
-		writePlainError(w, 405, "method not allowed")
+		writeJsonError(w, 405, "method not allowed")
 		return
 	}
 
@@ -104,13 +104,13 @@ func serveUfop(w http.ResponseWriter, req *http.Request) {
 
 	ufopReqData, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		writePlainError(w, 500, "read ufop request body error")
+		writeJsonError(w, 500, "read ufop request body error")
 		return
 	}
 
 	err = json.Unmarshal(ufopReqData, &ufopReq)
 	if err != nil {
-		writePlainError(w, 500, "parse ufop request body error")
+		writeJsonError(w, 500, "parse ufop request body error")
 		return
 	}
 
@@ -122,7 +122,7 @@ func serveUfop(w http.ResponseWriter, req *http.Request) {
 		}
 		logBytes, _ := json.Marshal(&ufopErr)
 		log.Println(string(logBytes))
-		writePlainError(w, 400, err.Error())
+		writeJsonError(w, 400, err.Error())
 	} else {
 		switch ufopResultContentType {
 		case "application/json":
@@ -150,18 +150,19 @@ func handleJob(ufopReq UfopRequest) (interface{}, string, error) {
 	return ufopResult, contentType, err
 }
 
-func writePlainError(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "text/plain")
+func writeJsonError(w http.ResponseWriter, statusCode int, message string) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	io.WriteString(w, message)
+	io.WriteString(w, fmt.Sprintf(`{"error":"%s"}`, message))
 }
 
 func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
 	data, err := json.Marshal(result)
 	if err != nil {
 		log.Println("encode ufop result error,", err)
-		writePlainError(w, 500, "encode ufop result error")
+		writeJsonError(w, 500, "encode ufop result error")
 	} else {
 		_, err := io.WriteString(w, string(data))
 		if err != nil {
