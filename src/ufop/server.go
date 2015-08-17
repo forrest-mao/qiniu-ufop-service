@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/qiniu/api/auth/digest"
+	"github.com/qiniu/api.v6/auth/digest"
 	"io"
 	"io/ioutil"
 	"log"
@@ -107,7 +107,7 @@ func serveUfop(w http.ResponseWriter, req *http.Request) {
 		writeJsonError(w, 500, "read ufop request body error")
 		return
 	}
-
+	log.Println(string(ufopReqData))
 	err = json.Unmarshal(ufopReqData, &ufopReq)
 	if err != nil {
 		writeJsonError(w, 500, "parse ufop request body error")

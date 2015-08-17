@@ -3,8 +3,8 @@ package ufop
 import (
 	"errors"
 	"fmt"
-	"github.com/qiniu/api/auth/digest"
-	"github.com/qiniu/api/rs"
+	"github.com/qiniu/api.v6/auth/digest"
+	"github.com/qiniu/api.v6/rs"
 	"io"
 	"io/ioutil"
 	"log"
