@@ -3,8 +3,10 @@ package ufop
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -173,6 +175,45 @@ func (this *Html2Imager) Do(req UfopRequest) (result interface{}, contentType st
 		return
 	}
 
+	//get page file content save it into temp dir
+	resp, respErr := http.Get(req.Src.Url)
+	if respErr != nil || resp.StatusCode != 200 {
+		if respErr != nil {
+			err = errors.New(fmt.Sprintf("retrieve page file resource data failed, %s", respErr.Error()))
+		} else {
+			err = errors.New(fmt.Sprintf("retrieve page file resource data failed, %s", resp.Status))
+			if resp.Body != nil {
+				resp.Body.Close()
+			}
+		}
+		return
+	}
+
+	jobPrefix := md5Hex(req.Src.Url)
+
+	pageSuffix := "txt"
+	if req.Src.MimeType == "text/html" {
+		pageSuffix = "html"
+	}
+
+	localPageTmpFpath := fmt.Sprintf("%s%d.page.%s", jobPrefix, time.Now().UnixNano(), pageSuffix)
+	defer os.Remove(localPageTmpFpath)
+
+	localPageTmpFp, openErr := os.OpenFile(localPageTmpFpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0655)
+	if openErr != nil {
+		err = errors.New(fmt.Sprintf("open page file temp file failed, %s", openErr.Error()))
+		return
+	}
+	_, cpErr := io.Copy(localPageTmpFp, resp.Body)
+	if cpErr != nil {
+		err = errors.New(fmt.Sprintf("save page file content to tmp file failed, %s", cpErr.Error()))
+		return
+	}
+
+	localPageTmpFp.Close()
+	resp.Body.Close()
+
+	//prepare command
 	cmdParams := make([]string, 0)
 	cmdParams = append(cmdParams, "-q")
 
@@ -213,11 +254,11 @@ func (this *Html2Imager) Do(req UfopRequest) (result interface{}, contentType st
 	}
 
 	//result tmp file
-	resultTmpFname := fmt.Sprintf("%s%d.%s", md5Hex(req.Src.Url), time.Now().UnixNano(), options.Format)
+	resultTmpFname := fmt.Sprintf("%s%d.result.%s", jobPrefix, time.Now().UnixNano(), options.Format)
 	resultTmpFpath := filepath.Join(os.TempDir(), resultTmpFname)
 	defer os.Remove(resultTmpFpath)
 
-	cmdParams = append(cmdParams, req.Src.Url, resultTmpFpath)
+	cmdParams = append(cmdParams, localPageTmpFpath, resultTmpFpath)
 
 	//cmd
 	convertCmd := exec.Command("wkhtmltoimage", cmdParams...)
@@ -264,6 +305,8 @@ func (this *Html2Imager) Do(req UfopRequest) (result interface{}, contentType st
 			return
 		}
 		result = outputBytes
+	} else {
+		err = errors.New("html2image with no valid output result")
 	}
 
 	if options.Format == "png" {

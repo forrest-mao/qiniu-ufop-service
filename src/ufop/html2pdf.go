@@ -3,8 +3,10 @@ package ufop
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -139,9 +141,48 @@ func (this *Html2Pdfer) Do(req UfopRequest) (result interface{}, contentType str
 		return
 	}
 
-	//html2pdf options
+	//get page file content save it into temp dir
+	resp, respErr := http.Get(req.Src.Url)
+	if respErr != nil || resp.StatusCode != 200 {
+		if respErr != nil {
+			err = errors.New(fmt.Sprintf("retrieve page file resource data failed, %s", respErr.Error()))
+		} else {
+			err = errors.New(fmt.Sprintf("retrieve page file resource data failed, %s", resp.Status))
+			if resp.Body != nil {
+				resp.Body.Close()
+			}
+		}
+		return
+	}
+
+	jobPrefix := md5Hex(req.Src.Url)
+
+	pageSuffix := "txt"
+	if req.Src.MimeType == "text/html" {
+		pageSuffix = "html"
+	}
+
+	localPageTmpFpath := fmt.Sprintf("%s%d.page.%s", jobPrefix, time.Now().UnixNano(), pageSuffix)
+	defer os.Remove(localPageTmpFpath)
+
+	localPageTmpFp, openErr := os.OpenFile(localPageTmpFpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0655)
+	if openErr != nil {
+		err = errors.New(fmt.Sprintf("open page file temp file failed, %s", openErr.Error()))
+		return
+	}
+	_, cpErr := io.Copy(localPageTmpFp, resp.Body)
+	if cpErr != nil {
+		err = errors.New(fmt.Sprintf("save page file content to tmp file failed, %s", cpErr.Error()))
+		return
+	}
+
+	localPageTmpFp.Close()
+	resp.Body.Close()
+
+	//prepare command
 	cmdParams := make([]string, 0)
 	cmdParams = append(cmdParams, "-q")
+
 	if options.Gray {
 		cmdParams = append(cmdParams, "--grayscale")
 	}
@@ -171,11 +212,11 @@ func (this *Html2Pdfer) Do(req UfopRequest) (result interface{}, contentType str
 	cmdParams = append(cmdParams, "--copies", fmt.Sprintf("%d", options.Copies))
 
 	//result tmp file
-	resultTmpFname := fmt.Sprintf("%s%d.pdf", md5Hex(req.Src.Url), time.Now().UnixNano())
+	resultTmpFname := fmt.Sprintf("%s%d.result.pdf", jobPrefix, time.Now().UnixNano())
 	resultTmpFpath := filepath.Join(os.TempDir(), resultTmpFname)
 	defer os.Remove(resultTmpFpath)
 
-	cmdParams = append(cmdParams, req.Src.Url, resultTmpFpath)
+	cmdParams = append(cmdParams, localPageTmpFpath, resultTmpFpath)
 
 	//cmd
 	convertCmd := exec.Command("wkhtmltopdf", cmdParams...)
@@ -222,6 +263,8 @@ func (this *Html2Pdfer) Do(req UfopRequest) (result interface{}, contentType str
 			return
 		}
 		result = outputBytes
+	} else {
+		err = errors.New("html2pdf with no valid output result")
 	}
 
 	contentType = "application/pdf"
