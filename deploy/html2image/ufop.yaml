@@ -1,0 +1,18 @@
+image: ubuntu
+build_script:
+ - echo building...
+
+ - mv $RESOURCE/pkg/wkhtmltox-0.12.2_linux-trusty-amd64.deb .
+ - mv $RESOURCE/qufop .
+ - mv $RESOURCE/html2image.conf .
+ - mv $RESOURCE/ufop.yaml .
+ - sudo apt-get -y install fontconfig
+ - sudo apt-get -y install libfontconfig1
+ - sudo apt-get -y install libx11-6
+ - sudo apt-get -y install libxext6
+ - sudo apt-get -y install libxrender1
+ - sudo apt-get -y install xfonts-base
+ - sudo apt-get -y install xfonts-75dpi
+ - sudo dpkg -i wkhtmltox-0.12.2_linux-trusty-amd64.deb
+
+run: ./qufop html2image.conf

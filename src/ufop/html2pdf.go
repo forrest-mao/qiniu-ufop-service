@@ -97,6 +97,7 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 		copiesInt, _ := strconv.Atoi(copiesStr)
 		if copiesInt <= 0 {
 			err = errors.New("invalid html2pdf parameter 'copies'")
+			return
 		} else {
 			options.Copies = copiesInt
 		}

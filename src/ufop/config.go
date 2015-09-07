@@ -43,6 +43,8 @@ type UfopConfig struct {
 
 	Html2PdfMaxPageSize int64 `json:"html2pdf_max_page_size,omitempty"`
 	Html2PdfMaxCopies   int   `json:"html2pdf_max_copies,omitempty"`
+
+	Html2ImageMaxPageSize int64 `json:"html2image_max_page_size,omitempty"`
 }
 
 func (this *UfopConfig) LoadFromFile(configFilePath string) (err error) {
