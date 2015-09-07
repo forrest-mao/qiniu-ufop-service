@@ -1,0 +1,9 @@
+image: ubuntu
+build_script:
+ - echo building...
+ - sudo mv $RESOURCE/bin/ffmpeg /usr/local/bin/
+ - sudo mv $RESOURCE/lib/* /lib/x86_64-linux-gnu/
+ - mv $RESOURCE/qufop .
+ - mv $RESOURCE/amerge.conf .
+ - mv $RESOURCE/ufop.yaml .
+run: ./qufop amerge.conf
