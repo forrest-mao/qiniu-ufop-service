@@ -188,8 +188,10 @@ func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType st
 		"-f", dstFormat,
 		oTmpFname,
 	}
+
 	//exec command
 	mergeCmd := exec.Command("ffmpeg", mergeCmdParams...)
+
 	stdErrPipe, pipeErr := mergeCmd.StderrPipe()
 	if pipeErr != nil {
 		err = errors.New(fmt.Sprintf("open exec stderr pipe error, %s", pipeErr.Error()))
@@ -199,19 +201,23 @@ func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType st
 		err = errors.New(fmt.Sprintf("start ffmpeg command error, %s", startErr.Error()))
 		return
 	}
+
 	stdErrData, readErr := ioutil.ReadAll(stdErrPipe)
 	if readErr != nil {
 		err = errors.New(fmt.Sprintf("read ffmpeg command stderr error, %s", readErr.Error()))
 		return
 	}
-	if waitErr := mergeCmd.Wait(); waitErr != nil {
-		err = errors.New(fmt.Sprintf("wait ffmpeg to exit error, %s", waitErr))
-		return
-	}
+
 	//check stderr output & output file
 	if string(stdErrData) != "" {
 		log.Println(string(stdErrData))
 	}
+
+	if waitErr := mergeCmd.Wait(); waitErr != nil {
+		err = errors.New(fmt.Sprintf("wait ffmpeg to exit error, %s", waitErr))
+		return
+	}
+
 	if oFileInfo, statErr := os.Stat(oTmpFname); statErr == nil {
 		if oFileInfo.Size() > 0 {
 			oTmpFp, openErr := os.Open(oTmpFname)

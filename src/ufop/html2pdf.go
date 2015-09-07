@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -171,17 +172,18 @@ func (this *Html2Pdfer) Do(req UfopRequest) (result interface{}, contentType str
 
 	//result tmp file
 	resultTmpFname := fmt.Sprintf("%s%d.pdf", md5Hex(req.Src.Url), time.Now().UnixNano())
-	defer os.Remove(resultTmpFname)
+	resultTmpFpath := filepath.Join(os.TempDir(), resultTmpFname)
+	defer os.Remove(resultTmpFpath)
 
-	cmdParams = append(cmdParams, req.Src.Url, resultTmpFname)
+	cmdParams = append(cmdParams, req.Src.Url, resultTmpFpath)
 
 	//cmd
 	convertCmd := exec.Command("wkhtmltopdf", cmdParams...)
 	log.Println(convertCmd.Path, convertCmd.Args)
 
-	stdOutPipe, pipeErr := convertCmd.StdoutPipe()
+	stdErrPipe, pipeErr := convertCmd.StderrPipe()
 	if pipeErr != nil {
-		err = errors.New(fmt.Sprintf("open exec stdout pipe error, %s", pipeErr.Error()))
+		err = errors.New(fmt.Sprintf("open exec stderr pipe error, %s", pipeErr.Error()))
 		return
 	}
 
@@ -190,24 +192,24 @@ func (this *Html2Pdfer) Do(req UfopRequest) (result interface{}, contentType str
 		return
 	}
 
-	stdErrData, readErr := ioutil.ReadAll(stdOutPipe)
+	stdErrData, readErr := ioutil.ReadAll(stdErrPipe)
 	if readErr != nil {
-		err = errors.New(fmt.Sprintf("read html2pdf command stdout error, %s", readErr.Error()))
+		err = errors.New(fmt.Sprintf("read html2pdf command stderr error, %s", readErr.Error()))
 		return
 	}
 
-	if waitErr := convertCmd.Wait(); waitErr != nil {
-		err = errors.New(fmt.Sprintf("wait html2pdf to exit error, %s", waitErr))
-		return
-	}
-
-	//check stdout output & output file
+	//check stderr output & output file
 	if string(stdErrData) != "" {
 		log.Println(string(stdErrData))
 	}
 
-	if _, statErr := os.Stat(resultTmpFname); statErr == nil {
-		oTmpFp, openErr := os.Open(resultTmpFname)
+	if waitErr := convertCmd.Wait(); waitErr != nil {
+		err = errors.New(fmt.Sprintf("wait html2pdf to exit error, %s", waitErr.Error()))
+		return
+	}
+
+	if _, statErr := os.Stat(resultTmpFpath); statErr == nil {
+		oTmpFp, openErr := os.Open(resultTmpFpath)
 		if openErr != nil {
 			err = errors.New(fmt.Sprintf("open html2pdf output result error, %s", openErr.Error()))
 			return

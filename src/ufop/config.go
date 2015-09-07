@@ -25,9 +25,12 @@ type UfopConfig struct {
 
 	MaxHeaderBytes int `json:"max_header_bytes,omitempty"`
 
+	//make you ufop instance name unique
 	UfopPrefix string `json:"ufop_prefix"`
-	AccessKey  string `json:"access_key"`
-	SecretKey  string `json:"secret_key"`
+
+	//ak & sk, optional somethimes
+	AccessKey string `json:"access_key,omitempty"`
+	SecretKey string `json:"secret_key,omitempty"`
 
 	//service config, optional
 
