@@ -45,6 +45,7 @@
 |-----|--------------------------|---------|
 |mkzip|实现了支持utf8和gbk两种编码方式的文件打包功能，可以解决Windows下使用系统自带解压工具解压zip出现的文件中文名称乱码问题。|[详细](https://github.com/jemygraw/qiniu-ufop-service/wiki/mkzip)|
 |unzip|实现了文件上传七牛空间，再解压缩功能，可以用于小文件打包上传，提高上传速度。|[详细](https://github.com/jemygraw/qiniu-ufop-service/wiki/unzip)|
+|amerge|实现了两个音频文件的混音功能。|[详细](https://github.com/jemygraw/qiniu-ufop-service/wiki/amerge)|
 
 
 ##反馈
