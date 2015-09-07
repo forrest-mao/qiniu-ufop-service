@@ -3,7 +3,6 @@ package ufop
 import (
 	"errors"
 	"fmt"
-	"github.com/qiniu/api.v6/auth/digest"
 	"io/ioutil"
 	"log"
 	"os"
@@ -20,7 +19,6 @@ const (
 )
 
 type Html2Pdfer struct {
-	mac         *digest.Mac
 	maxPageSize int64
 	maxCopies   int
 }
@@ -36,8 +34,8 @@ type Html2PdfOptions struct {
 }
 
 func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) {
-	prefixPattern := `^html2pdf(/gray/[0|1]|/low/[0|1]|/orient/(Portrait|Landscape)|/size/[A-B][0-8]|/title/[0-9a-zA-Z-_=]+|/collate/[0|1]|/copies/\d+)*$`
-	matched, _ := regexp.Match(prefixPattern, []byte(cmd))
+	pattern := `^html2pdf(/gray/[0|1]|/low/[0|1]|/orient/(Portrait|Landscape)|/size/[A-B][0-8]|/title/[0-9a-zA-Z-_=]+|/collate/[0|1]|/copies/\d+)*$`
+	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
 		err = errors.New("invalid html2pdf command format")
 		return
@@ -47,7 +45,6 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 
 	//get optional parameters
 
-	//default params
 	options = &Html2PdfOptions{
 		Collate: true,
 		Copies:  1,
@@ -55,16 +52,20 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 
 	//get gray
 	grayStr := getParam(cmd, "gray/[0|1]", "gray")
-	grayInt, _ := strconv.Atoi(grayStr)
-	if grayInt == 1 {
-		options.Gray = true
+	if grayStr != "" {
+		grayInt, _ := strconv.Atoi(grayStr)
+		if grayInt == 1 {
+			options.Gray = true
+		}
 	}
 
 	//get low quality
 	lowStr := getParam(cmd, "low/[0|1]", "low")
-	lowInt, _ := strconv.Atoi(lowStr)
-	if lowInt == 1 {
-		options.LowQuality = true
+	if lowStr != "" {
+		lowInt, _ := strconv.Atoi(lowStr)
+		if lowInt == 1 {
+			options.LowQuality = true
+		}
 	}
 
 	//orient
@@ -92,12 +93,13 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 
 	//copies
 	copiesStr := getParam(cmd, `copies/\d+`, "copies")
-	copiesInt, _ := strconv.Atoi(copiesStr)
-	if copiesInt < 0 {
-		err = errors.New("invalid html2pdf parameter 'copies'")
-		return
-	} else if copiesInt > 0 {
-		options.Copies = copiesInt
+	if copiesStr != "" {
+		copiesInt, _ := strconv.Atoi(copiesStr)
+		if copiesInt <= 0 {
+			err = errors.New("invalid html2pdf parameter 'copies'")
+		} else {
+			options.Copies = copiesInt
+		}
 	}
 
 	return

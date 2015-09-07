@@ -67,7 +67,6 @@ func (this *UfopServer) registerJobHandlers() {
 
 	//html2pdf
 	html2Pdfer = &Html2Pdfer{
-		mac:         &mac,
 		maxPageSize: this.cfg.Html2PdfMaxPageSize,
 		maxCopies:   this.cfg.Html2PdfMaxCopies,
 	}
