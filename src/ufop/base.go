@@ -1,7 +1,9 @@
 package ufop
 
 import (
+	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"regexp"
 	"strings"
 )
@@ -38,4 +40,10 @@ func getParamDecoded(fromStr, pattern, key string) (value string, err error) {
 	}
 	value = string(decodedBytes)
 	return
+}
+
+func md5Hex(str string) string {
+	h := md5.New()
+	h.Write([]byte(str))
+	return hex.EncodeToString(h.Sum(nil))
 }

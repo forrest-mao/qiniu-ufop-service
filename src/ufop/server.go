@@ -19,6 +19,7 @@ var (
 	unzipper    *UnZipper
 	mkzipper    *Mkziper
 	amerger     *AudioMerger
+	html2Pdfer  *Html2Pdfer
 )
 
 type UfopJobHandler interface {
@@ -49,12 +50,14 @@ func (this *UfopServer) registerJobHandlers() {
 		maxFileLength:    this.cfg.UnzipMaxFileLength,
 		maxFileCount:     this.cfg.UnzipMaxFileCount,
 	}
+
 	//mkzipper
 	mkzipper = &Mkziper{
 		mac:           &mac,
 		maxFileLength: this.cfg.MkzipMaxFileLength,
 		maxFileCount:  this.cfg.MkzipMaxFileCount,
 	}
+
 	//audio merger
 	amerger = &AudioMerger{
 		mac:                 &mac,
@@ -62,9 +65,17 @@ func (this *UfopServer) registerJobHandlers() {
 		maxSecondFileLength: this.cfg.AmergeMaxSecondFileLength,
 	}
 
+	//html2pdf
+	html2Pdfer = &Html2Pdfer{
+		mac:         &mac,
+		maxPageSize: this.cfg.Html2PdfMaxPageSize,
+		maxCopies:   this.cfg.Html2PdfMaxCopies,
+	}
+
 	jobHandlers[ufopPrefix+"unzip"] = unzipper
 	jobHandlers[ufopPrefix+"mkzip"] = mkzipper
 	jobHandlers[ufopPrefix+"amerge"] = amerger
+	jobHandlers[ufopPrefix+"html2pdf"] = html2Pdfer
 }
 
 func (this *UfopServer) Listen() {
