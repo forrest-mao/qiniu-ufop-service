@@ -196,7 +196,8 @@ func (this *Html2Imager) Do(req UfopRequest) (result interface{}, contentType st
 		pageSuffix = "html"
 	}
 
-	localPageTmpFpath := fmt.Sprintf("%s%d.page.%s", jobPrefix, time.Now().UnixNano(), pageSuffix)
+	localPageTmpFname := fmt.Sprintf("%s%d.page.%s", jobPrefix, time.Now().UnixNano(), pageSuffix)
+	localPageTmpFpath := filepath.Join(os.TempDir(), localPageTmpFname)
 	defer os.Remove(localPageTmpFpath)
 
 	localPageTmpFp, openErr := os.OpenFile(localPageTmpFpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0655)
