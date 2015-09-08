@@ -6,7 +6,7 @@
 ###二进制包下载
 
 |开发环境|下载|
-|-------|
+|-------|-----|
 |Mac|http://download.gna.org/wkhtmltopdf/0.12/0.12.2/wkhtmltox-0.12.2_osx-cocoa-x86-64.pkg|
 
 |Ufop环境|下载|
