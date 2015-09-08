@@ -44,11 +44,11 @@
 
 |名称|描述|文档|
 |-----|--------------------------|---------|
-|mkzip|实现了支持utf8和gbk两种编码方式的文件打包功能，可以解决Windows下使用系统自带解压工具解压zip出现的文件中文名称乱码问题。|[详细](wiki/mkzip)|
-|unzip|实现了文件上传七牛空间，再解压缩功能，可以用于小文件打包上传，提高上传速度。|[详细](docs/unzip)|
-|amerge|实现了两个音频文件的混音功能。|[详细](docs/amerge)|
-|html2pdf|实现html文档到pdf的转换功能|[详细](docs/html2pdf)|
-|html2image|实现html文档到image的转换功能|[详细](docs/html2image)|
+|mkzip|实现了支持utf8和gbk两种编码方式的文件打包功能，可以解决Windows下使用系统自带解压工具解压zip出现的文件中文名称乱码问题。|[详细](docs/mkzip.md)|
+|unzip|实现了文件上传七牛空间，再解压缩功能，可以用于小文件打包上传，提高上传速度。|[详细](docs/unzip.md)|
+|amerge|实现了两个音频文件的混音功能。|[详细](docs/amerge.md)|
+|html2pdf|实现html文档到pdf的转换功能|[详细](docs/html2pdf.md)|
+|html2image|实现html文档到image的转换功能|[详细](docs/html2image.md)|
 
 ##反馈
 1. 您可以通过创建issue的方式提交您的问题。
