@@ -35,7 +35,7 @@ html2image
 
 #配置
 
-出于安全性的考虑，你可以根据实际需求设置如下参数来控制html2image功能的安全性：
+出于安全性的考虑，你可以根据实际需求设置如下参数来控制`html2image`功能的安全性：
 
 |Key|Value|描述|
 |------------|-----------|-------------|
@@ -230,5 +230,5 @@ qntest-html2image/format/png/width/100
 qntest-html2image/format/png/width/100|saveas/aWYtcGJsOnRlc3QucG5n
 ```
 
-其中`aWYtcGJsOnRlc3QucG5n`为目标空间和目标图片文件名的`Urlsafe Base64编码`。
+其中`aWYtcGJsOnRlc3QucG5n`为目标存储空间和目标图片文件名的`Urlsafe Base64编码`。
 
