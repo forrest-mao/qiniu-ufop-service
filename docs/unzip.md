@@ -109,8 +109,8 @@ createAt: 2015-04-06 22:37:22.360479712 +0800 CST
 
 5.使用`qufopctl`的`info`来查看当前ufop所使用的镜像。
 
-$ qufopctl info qntest-unzip
 ```
+$ qufopctl info qntest-unzip
 Ufop name:	 qntest-unzip
 Owner:		 1380340116
 Version:	 0
