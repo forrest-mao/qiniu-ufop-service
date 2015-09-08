@@ -45,7 +45,7 @@ html2pdf
 |Key|Value|描述|
 |------------|-----------|-------------|
 |html2pdf_max_page_size|默认为10MB，单位：字节|允许进行文档转换的单个页面的大小|
-|html2pdf_max_copies|默认为1|
+|html2pdf_max_copies|默认为1|允许输出的PDF文档的最大副本数量|
 
 #创建
 
