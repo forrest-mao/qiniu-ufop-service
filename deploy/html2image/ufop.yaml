@@ -6,6 +6,7 @@ build_script:
  - mv $RESOURCE/qufop .
  - mv $RESOURCE/html2image.conf .
  - mv $RESOURCE/ufop.yaml .
+
  - sudo apt-get -y install fontconfig
  - sudo apt-get -y install libfontconfig1
  - sudo apt-get -y install libx11-6
@@ -14,5 +15,15 @@ build_script:
  - sudo apt-get -y install xfonts-base
  - sudo apt-get -y install xfonts-75dpi
  - sudo dpkg -i wkhtmltox-0.12.2_linux-trusty-amd64.deb
+
+ - sudo mv $RESOURCE/fonts/simfang.ttf /usr/share/fonts/
+ - sudo mv $RESOURCE/fonts/simhei.ttf /usr/share/fonts/
+ - sudo mv $RESOURCE/fonts/simkai.ttf /usr/share/fonts/
+ - sudo mv $RESOURCE/fonts/simpbdo.ttf /usr/share/fonts/
+ - sudo mv $RESOURCE/fonts/simpfxo.ttf /usr/share/fonts/
+ - sudo mv $RESOURCE/fonts/simpo.ttf /usr/share/fonts/
+ - sudo mv $RESOURCE/fonts/simsun.ttc /usr/share/fonts/
+ - sudo mv $RESOURCE/fonts/simsunb.ttf /usr/share/fonts/
+ - sudo fc-cache
 
 run: ./qufop html2image.conf
