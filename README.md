@@ -35,7 +35,8 @@
 **ufop功能**和**ufop实例**的联系和区别
 
 1. ufop功能指的是该项目中实现的自定义数据处理功能，比如mkzip，unzip等。
-2. ufop实例指的是通过七牛的ufop管理工具注册的自定义数据处理功能，该功能的名称是`前缀+ufop功能名称`，比如前缀是`qn-`，那么对于`mkzip`功能，它对应的实例名称就是`qn-mkzip`，在使用`pfop`接口等数据处理API时，使用的是`ufop实例名称`，即`qn-mkzip`。
+2. ufop实例指的是通过七牛的ufop管理工具注册的自定义数据处理功能，该功能的名称是`前缀+ufop功能名称`，比如前缀是`qn-`，那么对于`mkzip`功能，它对应的实例名称就是`qn-mkzip`，在使用`pfop`接口等数据处理API时，使用的是`ufop实例名称`，即`qn-mkzip`。  
+3. 因为`ufop实例`的名称必须是唯一的，如果大家使用同一个功能的`ufop`，加上各自独有的前缀可以标识自己的`ufop实例`并且能够保证实例名称的唯一性。
 
 
 ##功能
@@ -44,10 +45,10 @@
 |名称|描述|文档|
 |-----|--------------------------|---------|
 |mkzip|实现了支持utf8和gbk两种编码方式的文件打包功能，可以解决Windows下使用系统自带解压工具解压zip出现的文件中文名称乱码问题。|[详细](wiki/mkzip)|
-|unzip|实现了文件上传七牛空间，再解压缩功能，可以用于小文件打包上传，提高上传速度。|[详细](wiki/unzip)|
-|amerge|实现了两个音频文件的混音功能。|[详细](wiki/amerge)|
-|html2pdf|实现html文档到pdf的转换功能|[详细](wiki/html2pdf)|
-|html2image|实现html文档到image的转换功能|[详细](wiki/html2image)|
+|unzip|实现了文件上传七牛空间，再解压缩功能，可以用于小文件打包上传，提高上传速度。|[详细](docs/unzip)|
+|amerge|实现了两个音频文件的混音功能。|[详细](docs/amerge)|
+|html2pdf|实现html文档到pdf的转换功能|[详细](docs/html2pdf)|
+|html2image|实现html文档到image的转换功能|[详细](docs/html2image)|
 
 ##反馈
 1. 您可以通过创建issue的方式提交您的问题。
