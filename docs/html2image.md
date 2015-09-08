@@ -210,3 +210,22 @@ Flavor:	 default
 Access list:	 1380340116
 ```
 
+#示例
+
+
+```
+qntest-html2image
+```
+
+```
+qntest-html2image/format/png/width/100
+```
+
+持久化的使用方式
+
+```
+qntest-html2image/format/png/width/100|saveas/aWYtcGJsOnRlc3QucG5n
+```
+
+其中`aWYtcGJsOnRlc3QucG5n`为目标空间和目标图片文件名的`Urlsafe Base64编码`。
+
