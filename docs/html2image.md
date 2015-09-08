@@ -34,6 +34,7 @@ html2image
 |force|是否强制目标图片的宽度为指定的宽度，可选值1或0，默认为0，如果设置为1，则目标图片宽度强制为指定值，不合适的宽度设定可能造成图片变形|可选|
 
 #配置
+
 出于安全性的考虑，你可以根据实际需求设置如下参数来控制html2image功能的安全性：
 
 |Key|Value|描述|
@@ -78,6 +79,8 @@ html2image
 ├── qufop
 └── ufop.yaml
 ```
+
+其中`fonts`目录下面为支持中文的字体，`pkg`下面为`xkhtmltoimage`的二进制可执行文件。
 
 3.使用`qufopctl`的`build`指令构建并上传`html2image`实例的项目文件。
 
