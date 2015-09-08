@@ -185,7 +185,7 @@ state: building
 createAt: 2015-09-08 15:47:11.179527356 +0800 CST
 ```
 
-3.等待第2步中的镜像的状态变成`build success`的时候，就可以使用`qufopctl`的`ufopver`指令来切换当前ufop所使用的镜像版本。
+3.等待第2步中的新的镜像的状态变成`build success`的时候，就可以使用`qufopctl`的`ufopver`指令来切换当前ufop所使用的镜像版本。
 
 ```
  $ qufopctl ufopver qntest-html2image -c 2

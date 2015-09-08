@@ -38,7 +38,15 @@ mkzip
 如果需要自定义，你需要在`qufop.conf`的配置文件中添加这两项。
 
 #创建
+
+如果是初次使用这个ufop的实例，我们需要遵循如下的步骤：
+
+```
+创建实例 -> 编译上传镜像 -> 切换镜像版本 -> 生成实例并启动
+```
+
 1.使用`qufopctl`的`reg`指令创建`mkzip`实例，假设前缀为`qntest-`，创建一个私有的ufop实例。
+
 ```
 $qufopctl reg qntest-mkzip -mode=2 -desc='mkzip ufop'
 Ufop name:	 qntest-mkzip
@@ -47,15 +55,19 @@ Description:	 mkzip ufop
 ```
 
 2.准备ufop镜像文件。
+
 ```
-$ tree qufop_v1.0
-qufop_v1.0
+$ tree mkzip
+
+mkzip
 ├── qufop
-├── qufop.conf
+├── mkzip.conf
 └── ufop.yaml
+
 ```
 其中`qufop`是编译好的可执行文件。必须使用`chmod +x qufop`来赋予可执行权限。`qufop.conf`为`qufop`运行需要的配置文件，对于`mkzip`功能来讲，它可能有如下的配置信息：
 ```
+
 {
     "listen_port": 9100,
     "listen_host": "0.0.0.0",
@@ -68,21 +80,24 @@ qufop_v1.0
     "mkzip_max_file_length":104857600,
     "mkzip_max_file_count":20
 }
+
 ```
 注意配置文件里面`ufop_prefix`和注册的ufop名称前缀一致。
 
 `ufop.yaml`是七牛ufop规范所要求的镜像构建配置文件，内容如下：
+
 ```
 image: ubuntu
 build_script:
  - echo building...
  - mv $RESOURCE/* .
-run: ./qufop qufop.conf
+run: ./qufop mkzip.conf
 ```
 
 3.使用`qufopctl`的`build`指令构建并上传`mkzip`实例的项目文件。
+
 ```
-$ qufopctl build qntest-mkzip -dir='qufop_v1.0'
+$ qufopctl build qntest-mkzip -dir mkzip
 checking files ...
 getting upload token ...
 making .tar file ...
@@ -91,6 +106,7 @@ upload .tar succeed, please check 'imageinfo' and 'ufopver'.
 ```
 
 4.使用`qufopctl`的`imageinfo`来查看已上传的镜像。
+
 ```
 $ qufopctl imageinfo qntest-mkzip
 version: 1
@@ -99,6 +115,7 @@ createAt: 2015-04-06 21:50:50.780011704 +0800 CST
 ```
 
 5.使用`qufopctl`的`info`来查看当前ufop所使用的镜像。
+
 $ qufopctl info qntest-mkzip
 ```
 Ufop name:	 qntest-mkzip
@@ -112,14 +129,17 @@ Max instanceNum: 5
 Flavor:	 default
 Access list:	 1380340116
 ```
+
 我们看到`Version`的值为`0`，说明当前没有可用的版本。
 
 6.使用`qufopctl`的`ufopver`指令切换当前ufop所使用的镜像版本。
+
 ```
-$ qufopctl ufopver qntest-mkzip -c=1
+$ qufopctl ufopver qntest-mkzip -c 1
 ```
 
 7.再次使用`qufopctl`的`info`指令查看当前ufop所使用的镜像版本。
+
 ```
 $ qufopctl info qntest-mkzip
 Ufop name:	 qntest-mkzip
@@ -135,14 +155,78 @@ Access list:	 1380340116
 ```
 
 8.使用`qufopctl`的`resize`指令来启动`ufop`的实例。
+
 ```
-$ qufopctl resize qntest-mkzip -num=1
+$ qufopctl resize qntest-mkzip -num 1
 Resize instance num from 1 to 1.
 ```
 
 9.然后就可以使用七牛标准的fop使用方式来使用这个`qntest-mkzip`名称的`ufop` 了。
 
+#更新
+
+如果是需要对一个已有的ufop实例更新镜像的版本，我们需要遵循如下的步骤：
+
+```
+编译上传镜像 -> 切换镜像版本 -> 更新实例
+```
+
+1.使用`qufopctl`的`build`指令构建并上传`mkzip`实例的项目文件。
+
+```
+$ qufopctl build qntest-mkzip -dir mkzip
+checking files ...
+getting upload token ...
+making .tar file ...
+uploading .tar file ...
+upload .tar succeed, please check 'imageinfo' and 'ufopver'.
+```
+
+2.使用`qufopctl`的`imageinfo`来查看已经上传的镜像。
+
+```
+$ qufopctl imageinfo qntest-mkzip
+version: 1
+state: build success
+createAt: 2015-04-06 21:50:50.780011704 +0800 CST
+
+version: 2
+state: building
+createAt: 2015-09-08 16:39:09.537306064 +0800 CST
+```
+
+3.等待第2步中的新的镜像的状态变成`build success`的时候，就可以使用`qufopctl`的`ufopver`指令来切换当前ufop所使用的镜像版本。
+
+```
+$ qufopctl ufopver qntest-mkzip -c 2
+```
+
+4.更新线上实例的镜像版本。
+
+```
+$ qufopctl upgrade qntest-mkzip
+```
+
+5.使用`qufopctl`的`info`指令查看当前ufop所使用的镜像版本。
+
+```
+$ qufopctl info qntest-mkzip
+Ufop name:   qntest-mkzip
+Owner:       1380340116
+Version:     2
+Access mode:     PRIVATE
+Description:     mkzip ufop
+Create time:     2015-04-06 21:42:29 +0800 CST
+Instance num:    1
+Max instanceNum: 5
+Flavor:  default
+Access list:     1380340116
+```
+
 #示例
+
+持久化的使用方式：
+
 ```
 qntest-mkzip
 /bucket/aWYtcGJs
@@ -152,4 +236,7 @@ qntest-mkzip
 /url/aHR0cDovLzdwbjY0Yy5jb20xLnowLmdsYi5jbG91ZGRuLmNvbS8yMDE1LzAzLzI3LzEzLmpwZw==/alias/MjAxNS9waG90by5qcGc=
 |saveas/aWYtcGJsOnFpbml1LnppcA==
 ```
-注意`saveas`的使用。
+
+上面的写法是格式化后便于理解，实际使用中没有换行符号。
+
+其中`saveas`的参数为保存的目标空间和目标文件名的`Urlsafe Base64编码`。
