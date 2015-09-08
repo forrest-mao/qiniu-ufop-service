@@ -23,8 +23,8 @@
 |----------|-----------|--------|
 |listen_port|9100   	| 固定为9100，不可以改动|
 |listen_host| 0.0.0.0 	| 固定为`0.0.0.0`，不可以改动|
-|read_timeout| <自定义>		| http请求的读取超时时间，单位:秒，默认1800s|
-|write_timeout| <自定义>		| http请求的回复超时时间，单位:秒，默认1800s|
+|read_timeout| <自定义> | http请求的读取超时时间，单位:秒，默认1800s|
+|write_timeout| <自定义>	| http请求的回复超时时间，单位:秒，默认1800s|
 |max_header_bytes| <自定义> | http请求的头部大小，单位:字节，默认65535字节|
 |ufop_prefix| <自定义>	| ufop服务的前缀，因为该项目集成了很多ufop功能，而根据七牛的ufop规范，每一个ufop实例的名称必须不同，所以通过统一的前缀来避免ufop名称重复|
 |access_key| <自定义> 	| 客户账户的AccessKey，可以从七牛后台获得 |
@@ -43,10 +43,11 @@
 
 |名称|描述|文档|
 |-----|--------------------------|---------|
-|mkzip|实现了支持utf8和gbk两种编码方式的文件打包功能，可以解决Windows下使用系统自带解压工具解压zip出现的文件中文名称乱码问题。|[详细](https://github.com/jemygraw/qiniu-ufop-service/wiki/mkzip)|
-|unzip|实现了文件上传七牛空间，再解压缩功能，可以用于小文件打包上传，提高上传速度。|[详细](https://github.com/jemygraw/qiniu-ufop-service/wiki/unzip)|
-|amerge|实现了两个音频文件的混音功能。|[详细](https://github.com/jemygraw/qiniu-ufop-service/wiki/amerge)|
-
+|mkzip|实现了支持utf8和gbk两种编码方式的文件打包功能，可以解决Windows下使用系统自带解压工具解压zip出现的文件中文名称乱码问题。|[详细](wiki/mkzip)|
+|unzip|实现了文件上传七牛空间，再解压缩功能，可以用于小文件打包上传，提高上传速度。|[详细](wiki/unzip)|
+|amerge|实现了两个音频文件的混音功能。|[详细](wiki/amerge)|
+|html2pdf|实现html文档到pdf的转换功能|[详细](wiki/html2pdf)|
+|html2image|实现html文档到image的转换功能|[详细](wiki/html2image)|
 
 ##反馈
 1. 您可以通过创建issue的方式提交您的问题。
