@@ -158,7 +158,7 @@ func (this *Html2Pdfer) Do(req UfopRequest) (result interface{}, contentType str
 	jobPrefix := md5Hex(req.Src.Url)
 
 	pageSuffix := "txt"
-	if req.Src.MimeType == "text/html" {
+	if strings.HasPrefix(req.Src.MimeType, "text/html") {
 		pageSuffix = "html"
 	}
 

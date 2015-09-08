@@ -192,7 +192,7 @@ func (this *Html2Imager) Do(req UfopRequest) (result interface{}, contentType st
 	jobPrefix := md5Hex(req.Src.Url)
 
 	pageSuffix := "txt"
-	if req.Src.MimeType == "text/html" {
+	if strings.HasPrefix(req.Src.MimeType, "text/html") {
 		pageSuffix = "html"
 	}
 
