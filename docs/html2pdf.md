@@ -96,13 +96,13 @@ checking files ...
 getting upload token ...
 making .tar file ...
 uploading .tar file ...
-upload .tar succeed, please check 'pdfinfo' and 'ufopver'.
+upload .tar succeed, please check 'imageinfo' and 'ufopver'.
 ```
 
-4.使用`qufopctl`的`pdfinfo`来查看已上传的镜像。
+4.使用`qufopctl`的`imageinfo`来查看已上传的镜像。
 
 ```
-$ qufopctl pdfinfo qntest-html2pdf
+$ qufopctl imageinfo qntest-html2pdf
 version: 1
 state: building
 createAt: 2015-09-08 15:33:15.132727309 +0800 CST
@@ -175,13 +175,13 @@ checking files ...
 getting upload token ...
 making .tar file ...
 uploading .tar file ...
-upload .tar succeed, please check 'pdfinfo' and 'ufopver'.
+upload .tar succeed, please check 'imageinfo' and 'ufopver'.
 ```
 
-2.使用`qufopctl`的`pdfinfo`来查看已上传的镜像。
+2.使用`qufopctl`的`imageinfo`来查看已上传的镜像。
 
 ```
-$ qufopctl pdfinfo qntest-html2pdf
+$ qufopctl imageinfo qntest-html2pdf
 version: 1
 state: build success
 createAt: 2015-09-08 15:33:15.132727309 +0800 CST
@@ -191,19 +191,19 @@ state: building
 createAt: 2015-09-08 15:47:11.179527356 +0800 CST
 ```
 
-6.等待第2步中的镜像的状态变成`build success`的时候，就可以使用`qufopctl`的`ufopver`指令来切换当前ufop所使用的镜像版本。
+3.等待第2步中的镜像的状态变成`build success`的时候，就可以使用`qufopctl`的`ufopver`指令来切换当前ufop所使用的镜像版本。
 
 ```
  $ qufopctl ufopver qntest-html2pdf -c 2
 ```
 
-7.更新线上实例的镜像版本。
+4.更新线上实例的镜像版本。
 
 ```
 $ qufopctl upgrade qntest-html2pdf
 ```
 
-8.使用`qufopctl`的`info`指令查看当前ufop所使用的镜像版本。
+5.使用`qufopctl`的`info`指令查看当前ufop所使用的镜像版本。
 
 ```
 $ qufopctl info qntest-html2pdf
