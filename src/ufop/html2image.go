@@ -37,7 +37,7 @@ type Html2ImageOptions struct {
 }
 
 func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err error) {
-	pattern := `^html2image(/croph/\d+|/cropw/\d+|/cropx/\d+|/cropy/\d+|/format/(png|jpg|jpeg)|/height/\d+|/quality/\d+|/width/\d+|/force/[0|1])*$`
+	pattern := `^html2image(/croph/\d+|/cropw/\d+|/cropx/\d+|/cropy/\d+|/format/(png|jpg|jpeg)|/height/\d+|/quality/\d+|/width/\d+|/force/[0|1]){0,9}$`
 	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
 		err = errors.New("invalid html2image command format")

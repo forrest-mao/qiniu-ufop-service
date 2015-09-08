@@ -4,8 +4,6 @@
 线上：http://download.gna.org/wkhtmltopdf/0.12/0.12.2/wkhtmltox-0.12.2_linux-trusty-amd64.deb
 
 html2pdf/
-bucket/<Encoded Bucket>
-url/<Encoded Url>
 
 |可选参数|对应指令参数|
 |------|-----------|
