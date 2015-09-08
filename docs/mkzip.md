@@ -63,11 +63,11 @@ mkzip
 ├── qufop
 ├── mkzip.conf
 └── ufop.yaml
-
 ```
+
 其中`qufop`是编译好的可执行文件。必须使用`chmod +x qufop`来赋予可执行权限。`qufop.conf`为`qufop`运行需要的配置文件，对于`mkzip`功能来讲，它可能有如下的配置信息：
-```
 
+```
 {
     "listen_port": 9100,
     "listen_host": "0.0.0.0",
@@ -80,8 +80,8 @@ mkzip
     "mkzip_max_file_length":104857600,
     "mkzip_max_file_count":20
 }
-
 ```
+
 注意配置文件里面`ufop_prefix`和注册的ufop名称前缀一致。
 
 `ufop.yaml`是七牛ufop规范所要求的镜像构建配置文件，内容如下：
@@ -116,8 +116,8 @@ createAt: 2015-04-06 21:50:50.780011704 +0800 CST
 
 5.使用`qufopctl`的`info`来查看当前ufop所使用的镜像。
 
-$ qufopctl info qntest-mkzip
 ```
+$ qufopctl info qntest-mkzip
 Ufop name:	 qntest-mkzip
 Owner:		 1380340116
 Version:	 0

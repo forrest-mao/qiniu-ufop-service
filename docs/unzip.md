@@ -33,7 +33,13 @@ unzip/bucket/<UrlsafeBase64EncodedBucket>/prefix/<UrlsafeBase64EncodedPrefix>/ov
 如果需要自定义，你需要在`qufop.conf`的配置文件中添加这两项。
 
 #创建
+
+```
+创建实例 -> 编译上传镜像 -> 切换镜像版本 -> 生成实例并启动
+```
+
 1.使用`qufopctl`的`reg`指令创建`unzip`实例，假设前缀为qntest-，创建一个私有的ufop实例。
+
 ```
 $ qufopctl reg qntest-unzip -mode=2 -desc='unzip ufop'
 Ufop name:	 qntest-unzip
@@ -42,14 +48,17 @@ Description:	 unzip ufop
 ```
 
 2.准备ufop镜像文件。
+
 ```
-$ tree qufop_v1.0
-qufop_v1.0
+$ tree unzip
+unzip
 ├── qufop
 ├── qufop.conf
 └── ufop.yaml
 ```
+
 其中`qufop`是编译好的可执行文件。必须使用`chmod +x qufop`来赋予可执行权限。`qufop.conf`为`qufop`运行需要的配置文件，对于`unzip`功能来讲，它可能有如下的配置信息：
+
 ```
 {
     "listen_port": 9100,
@@ -65,9 +74,11 @@ qufop_v1.0
     "unzip_max_file_count":10
 }
 ```
+
 注意配置文件里面`ufop_prefix`和注册的ufop名称前缀一致。
 
 `ufop.yaml`是七牛ufop规范所要求的镜像构建配置文件，内容如下：
+
 ```
 image: ubuntu
 build_script:
@@ -77,8 +88,9 @@ run: ./qufop qufop.conf
 ```
 
 3.使用`qufopctl`的`build`指令构建并上传`unzip`实例的项目文件。
+
 ```
-$ qufopctl build qntest-unzip -dir='qufop_v1.0'
+$ qufopctl build qntest-unzip -dir='unzip'
 checking files ...
 getting upload token ...
 making .tar file ...
@@ -87,6 +99,7 @@ upload .tar succeed, please check 'imageinfo' and 'ufopver'.
 ```
 
 4.使用`qufopctl`的`imageinfo`来查看已上传的镜像。
+
 ```
 $ qufopctl imageinfo qntest-unzip
 version: 1
@@ -95,6 +108,7 @@ createAt: 2015-04-06 22:37:22.360479712 +0800 CST
 ```
 
 5.使用`qufopctl`的`info`来查看当前ufop所使用的镜像。
+
 $ qufopctl info qntest-unzip
 ```
 Ufop name:	 qntest-unzip
@@ -111,11 +125,13 @@ Access list:	 1380340116
 我们看到`Version`的值为`0`，说明当前没有可用的版本。
 
 6.使用`qufopctl`的`ufopver`指令切换当前ufop所使用的镜像版本。
+
 ```
 $ qufopctl ufopver qntest-unzip -c=1
 ```
 
 7.再次使用`qufopctl`的`info`指令查看当前ufop所使用的镜像版本。
+
 ```
 $ qufopctl info qntest-unzip
 Ufop name:	 qntest-unzip
@@ -131,6 +147,7 @@ Access list:	 1380340116
 ```
 
 8.使用`qufopctl`的`resize`指令来启动`ufop`的实例。
+
 ```
 $ qufopctl resize qntest-unzip -num=1
 Resize instance num from 1 to 1.
@@ -138,8 +155,68 @@ Resize instance num from 1 to 1.
 
 9.然后就可以使用七牛标准的fop使用方式来使用这个`qntest-unzip`名称的`ufop` 了。
 
+#更新
+
+如果是需要对一个已有的ufop实例更新镜像的版本，我们需要遵循如下的步骤：
+
+```
+编译上传镜像 -> 切换镜像版本 -> 更新实例
+```
+
+1.使用`qufopctl`的`build`指令构建并上传`unzip`实例的项目文件。
+
+```
+$ qufopctl build qntest-unzip -dir unzip
+checking files ...
+getting upload token ...
+making .tar file ...
+uploading .tar file ...
+upload .tar succeed, please check 'imageinfo' and 'ufopver'.
+```
+
+2.使用`qufopctl`的`imageinfo`来查看已经上传的镜像。
+
+```
+$ qufopctl imageinfo qntest-unzip
+version: 1
+state: build success
+createAt: 2015-04-06 21:50:50.780011704 +0800 CST
+
+version: 2
+state: building
+createAt: 2015-09-08 16:39:09.537306064 +0800 CST
+```
+
+3.等待第2步中的新的镜像的状态变成`build success`的时候，就可以使用`qufopctl`的`ufopver`指令来切换当前ufop所使用的镜像版本。
+
+```
+$ qufopctl ufopver qntest-unzip -c 2
+```
+
+4.更新线上实例的镜像版本。
+
+```
+$ qufopctl upgrade qntest-unzip
+```
+
+5.使用`qufopctl`的`info`指令查看当前ufop所使用的镜像版本。
+
+```
+$ qufopctl info qntest-unzip
+Ufop name:   qntest-unzip
+Owner:       1380340116
+Version:     2
+Access mode:     PRIVATE
+Description:     unzip ufop
+Create time:     2015-04-06 21:42:29 +0800 CST
+Instance num:    1
+Max instanceNum: 5
+Flavor:  default
+Access list:     1380340116
+```
 
 #示例
+
 ```
 qntest-unzip/bucket/ZHpkcC10ZXN0
 ```
