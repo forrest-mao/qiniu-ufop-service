@@ -15,7 +15,7 @@
 
 ##结构
 
-该项目可以直接编译为符合七牛ufop规范的可执行文件，然后配合`qufop.conf`配置文件来运行。该配置文件中除了所有的ufop功能所需要的共同的配置，还包括每一个ufop功能所需要的单独的配置项目。在创建不同的ufop实例的时候，客户只需要提供所有ufop功能所需要的共同配置信息和某ufop功能所需要的指定的配置信息即可。可以参考[示例配置](https://github.com/jemygraw/qiniu-ufop-service/blob/master/src/qufop.conf)
+该项目可以直接编译为符合七牛ufop规范的可执行文件，然后配合`qufop.conf`配置文件来运行。该配置文件中除了所有的ufop功能所需要的共同的配置，还包括每一个ufop功能所需要的单独的配置项目。在创建不同的ufop实例的时候，客户只需要提供所有ufop功能所需要的共同配置信息和某ufop功能所需要的指定的配置信息即可。可以参考[示例配置](deploy/)
 
 所有ufop所需要的共同的配置信息
 
@@ -49,6 +49,9 @@
 |amerge|实现了两个音频文件的混音功能。|[详细](docs/amerge.md)|
 |html2pdf|实现html文档到pdf的转换功能|[详细](docs/html2pdf.md)|
 |html2image|实现html文档到image的转换功能|[详细](docs/html2image.md)|
+
+
+**PS: 以上功能的所有参考配置都在[deploy](deploy/)目录下面，可以参照文档和参考配置来使用。**
 
 ##反馈
 1. 您可以通过创建issue的方式提交您的问题。
