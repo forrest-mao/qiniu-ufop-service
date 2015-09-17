@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/qiniu/api.v6/auth/digest"
+	"github.com/qiniu/api.v6/conf"
 	fio "github.com/qiniu/api.v6/io"
 	rio "github.com/qiniu/api.v6/resumable/io"
 	"github.com/qiniu/api.v6/rs"
@@ -198,6 +199,9 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 			return
 		}
 		unzipReader := bytes.NewReader(unzipData)
+
+		//set up host
+		conf.UP_HOST = "http://up.qiniu.com"
 
 		//save file to bucket
 		fileName = prefix + fileName
