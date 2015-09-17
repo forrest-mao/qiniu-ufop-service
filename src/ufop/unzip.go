@@ -155,7 +155,8 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 		}
 	}
 
-	//parse zip
+	//set up host
+	conf.UP_HOST = "http://up.qiniu.com"
 	rputSettings := rio.Settings{
 		ChunkSize: 4 * 1024 * 1024,
 		Workers:   1,
@@ -199,9 +200,6 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 			return
 		}
 		unzipReader := bytes.NewReader(unzipData)
-
-		//set up host
-		conf.UP_HOST = "http://up.qiniu.com"
 
 		//save file to bucket
 		fileName = prefix + fileName
