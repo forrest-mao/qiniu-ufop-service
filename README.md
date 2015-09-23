@@ -27,8 +27,6 @@
 |write_timeout| <自定义>	| http请求的回复超时时间，单位:秒，默认1800s|
 |max_header_bytes| <自定义> | http请求的头部大小，单位:字节，默认65535字节|
 |ufop_prefix| <自定义>	| ufop服务的前缀，因为该项目集成了很多ufop功能，而根据七牛的ufop规范，每一个ufop实例的名称必须不同，所以通过统一的前缀来避免ufop名称重复|
-|access_key| <自定义> 	| 客户账户的AccessKey，可以从七牛后台获得 |
-|secret_key| <自定义> 	| 客户账户的SecretKey，可以从七牛后台获得 |
 
 **备注**：每个ufop实例所需要的单独的配置信息在每个ufop功能的文档中介绍。
 
