@@ -87,6 +87,7 @@ amerge
 │   └── libz.so.1
 ├── qufop
 ├── amerge.conf
+├── qufop.conf
 └── ufop.yaml
 ```
 

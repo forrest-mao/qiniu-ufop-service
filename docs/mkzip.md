@@ -61,11 +61,14 @@ $ tree mkzip
 
 mkzip
 ├── qufop
+├── qufop.conf
 ├── mkzip.conf
 └── ufop.yaml
 ```
 
 其中`qufop`是编译好的可执行文件。必须使用`chmod +x qufop`来赋予可执行权限。`qufop.conf`为`qufop`运行需要的配置文件，对于`mkzip`功能来讲，它可能有如下的配置信息：
+
+**qufop.conf**
 
 ```
 {
@@ -74,7 +77,14 @@ mkzip
     "read_timeout": 1800,
     "write_timeout": 1800,
     "max_header_bytes": 65535,
-    "ufop_prefix":"qntest-",
+    "ufop_prefix":"qntest-"
+}
+```
+
+**mkzip.conf**
+
+```
+{
     "access_key": "TQt-iplt8zbK3LEHMjNYyhh6PzxkbelZFRMl10xx",
     "secret_key": "hTIq4H8N5NfCme8gDvZqr6EDmvlIQsRV5L65bVva",
     "mkzip_max_file_length":104857600,
@@ -91,7 +101,7 @@ image: ubuntu
 build_script:
  - echo building...
  - mv $RESOURCE/* .
-run: ./qufop mkzip.conf
+run: ./qufop qufop.conf
 ```
 
 3.使用`qufopctl`的`build`指令构建并上传`mkzip`实例的项目文件。
