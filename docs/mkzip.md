@@ -37,6 +37,21 @@ mkzip
 
 如果需要自定义，你需要在`qufop.conf`的配置文件中添加这两项。
 
+#常见错误
+
+|错误信息|描述|
+|-------|------|
+|invalid mkzip command format|发送的ufop的指令格式不正确，请参考上面的命令格式设置正确的指令|
+|invalid mkzip paramter 'bucket'|指定的`bucket`参数不正确，必须是对原空间名称进行`urlsafe base64`编码后的值|
+|invalid mkzip parameter 'encoding'|指定的`encoding`参数不正确，必须是对原编码名称进行`urlsafe base64`编码后的值|
+|invalid mkzip parameter 'url'|指定的`url`列表中有一个不正确，必须是对资源链接进行`urlsafe base64`编码后的值|
+|invalid mkzip parameter 'alias'|指定的`alias`列表中有一个不正确，必须是对文件别名进行`urlsafe base64`编码后的值|
+|mkzip parameter 'url' format error|指定的`url`列表中有一个不正确，必须是正确的资源链接|
+|invalid mkzip resource url|指定的`url`列表中有一个不正确，必须是正确的资源链接|
+|duplicate mkzip resource alias|指定的`alias`列表中的别名有重复|
+|zip file count exceeds the limit|需要压缩的文件数量超过了ufop的最大值限制，这个最大值在`mkzip.conf`里面设置|
+|only support items less than 1000|需要压缩的文件数量超过了ufop的最大限制，目前代码最大允许1000个文件压缩|
+
 #创建
 
 如果是初次使用这个ufop的实例，我们需要遵循如下的步骤：
