@@ -32,6 +32,19 @@ unzip/bucket/<UrlsafeBase64EncodedBucket>/prefix/<UrlsafeBase64EncodedPrefix>/ov
 
 如果需要自定义，你需要在`qufop.conf`的配置文件中添加这两项。
 
+#常见错误
+
+|错误信息|描述|
+|-------|------|
+|invalid unzip command format|发送的ufop的指令格式不正确，请参考上面的命令格式设置正确的指令|
+|invalid unzip parameter 'bucket'|指定的`bucket`参数不正确，必须是对原空间名称进行`urlsafe base64`编码后的值|
+|invalid unzip parameter 'prefix'|指定的`prefix`参数不正确，必须是对原`prefix`进行`urlsafe base64`编码后的值|
+|invalid unzip parameter 'overwrite'|指定的`overwrite`参数不正确，必须是`0`或者`1`|
+|unsupported mimetype to unzip|需要解压的文件的类型不支持，必须是`application/zip`的才行|
+|src zip file length exceeds the limit|需要解压的文件大小超过了ufop的最大允许值，这个最大允许值在`unzip.conf`里面定义|
+|zip files count exceeds the limit|需要解压的文件里面的文件数量超过了ufop的最大允许值，这个最大允许值在`unzip.conf`里面定义|
+|zip file length exceeds the limit|需要解压的文件里面的文件的原始大小超过了ufop的最大允许值，这个最大允许值在`unzip.conf`里面定义|
+
 #创建
 
 ```
