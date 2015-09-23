@@ -12,10 +12,12 @@ import (
 	"ufop/unzip"
 )
 
-func help() {
-	fmt.Println(`qufop v1.0
+const (
+	VERSION = "1.3"
+)
 
-qufop [<UfopConfig>]`)
+func help() {
+	fmt.Printf("Usage: qufop <UfopConfig>\r\n\r\nVERSION: %s\r\n", VERSION)
 }
 
 func main() {
