@@ -65,10 +65,14 @@ func (this *Html2Pdfer) InitConfig(jobConf string) (err error) {
 
 	if config.Html2PdfMaxPageSize <= 0 {
 		this.maxPageSize = HTML2PDF_MAX_PAGE_SIZE
+	} else {
+		this.maxPageSize = config.Html2PdfMaxPageSize
 	}
 
 	if config.Html2PdfMaxCopies <= 0 {
 		this.maxCopies = HTML2PDF_MAX_COPIES
+	} else {
+		this.maxCopies = config.Html2PdfMaxCopies
 	}
 
 	return

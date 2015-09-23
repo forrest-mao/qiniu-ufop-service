@@ -64,6 +64,8 @@ func (this *Html2Imager) InitConfig(jobConf string) (err error) {
 
 	if config.Html2ImageMaxPageSize <= 0 {
 		this.maxPageSize = HTML2IMAGE_MAX_PAGE_SIZE
+	} else {
+		this.maxPageSize = config.Html2ImageMaxPageSize
 	}
 
 	return

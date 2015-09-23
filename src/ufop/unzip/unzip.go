@@ -75,12 +75,20 @@ func (this *Unzipper) InitConfig(jobConf string) (err error) {
 
 	if config.UnzipMaxFileCount <= 0 {
 		this.maxFileCount = UNZIP_MAX_FILE_COUNT
+	} else {
+		this.maxFileCount = config.UnzipMaxFileCount
 	}
+
 	if config.UnzipMaxFileLength <= 0 {
 		this.maxFileLength = UNZIP_MAX_FILE_LENGTH
+	} else {
+		this.maxFileLength = config.UnzipMaxFileLength
 	}
+
 	if config.UnzipMaxZipFileLength <= 0 {
 		this.maxZipFileLength = UNZIP_MAX_ZIP_FILE_LENGTH
+	} else {
+		this.maxZipFileLength = config.UnzipMaxZipFileLength
 	}
 
 	this.mac = &digest.Mac{config.AccessKey, []byte(config.SecretKey)}

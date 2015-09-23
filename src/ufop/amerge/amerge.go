@@ -60,9 +60,14 @@ func (this *AudioMerger) InitConfig(jobConf string) (err error) {
 
 	if config.AmergeMaxFirstFileLength <= 0 {
 		this.maxFirstFileLength = AUDIO_MERGE_MAX_FIRST_FILE_LENGTH
+	} else {
+		this.maxFirstFileLength = config.AmergeMaxFirstFileLength
 	}
+
 	if config.AmergeMaxSecondFileLength <= 0 {
 		this.maxSecondFileLength = AUDIO_MERGE_MAX_SECOND_FILE_LENGTH
+	} else {
+		this.maxSecondFileLength = config.AmergeMaxSecondFileLength
 	}
 
 	this.mac = &digest.Mac{config.AccessKey, []byte(config.SecretKey)}

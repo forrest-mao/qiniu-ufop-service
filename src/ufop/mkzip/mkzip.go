@@ -73,9 +73,14 @@ func (this *Mkzipper) InitConfig(jobConf string) (err error) {
 
 	if config.MkzipMaxFileCount <= 0 {
 		this.maxFileCount = MKZIP_MAX_FILE_COUNT
+	} else {
+		this.maxFileCount = config.MkzipMaxFileCount
 	}
+
 	if config.MkzipMaxFileLength <= 0 {
 		this.maxFileLength = MKZIP_MAX_FILE_LENGTH
+	} else {
+		this.maxFileLength = config.MkzipMaxFileLength
 	}
 
 	this.mac = &digest.Mac{config.AccessKey, []byte(config.SecretKey)}
