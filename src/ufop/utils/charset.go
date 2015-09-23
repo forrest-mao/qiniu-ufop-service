@@ -1,4 +1,4 @@
-package ufop
+package utils
 
 import (
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -7,7 +7,7 @@ import (
 var gbkDecoder = simplifiedchinese.GBK.NewDecoder()
 var gbkEncoder = simplifiedchinese.GBK.NewEncoder()
 
-func gbk2Utf8(text string) (string, error) {
+func Gbk2Utf8(text string) (string, error) {
 	utf8Dst := make([]byte, len(text)*3)
 	_, _, err := gbkDecoder.Transform(utf8Dst, []byte(text), true)
 	if err != nil {
@@ -23,7 +23,7 @@ func gbk2Utf8(text string) (string, error) {
 	return string(utf8Bytes), nil
 }
 
-func utf82GBK(text string) (string, error) {
+func Utf82Gbk(text string) (string, error) {
 	gbkDst := make([]byte, len(text)*2)
 	_, _, err := gbkEncoder.Transform(gbkDst, []byte(text), true)
 	if err != nil {

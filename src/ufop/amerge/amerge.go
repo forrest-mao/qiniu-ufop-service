@@ -1,6 +1,7 @@
-package ufop
+package amerge
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/qiniu/api.v6/auth/digest"
@@ -14,6 +15,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"ufop"
+	"ufop/utils"
 )
 
 const (
@@ -27,9 +30,54 @@ type AudioMerger struct {
 	maxSecondFileLength int64
 }
 
+type AudioMergerConfig struct {
+	//ak & sk
+	AccessKey string `json:"access_key"`
+	SecretKey string `json:"secret_key"`
+
+	AmergeMaxFirstFileLength  int64 `json:"amerge_max_first_file_length,omitempty"`
+	AmergeMaxSecondFileLength int64 `json:"amerge_max_second_file_length,omitempty"`
+}
+
+func (this *AudioMerger) Name() string {
+	return "amerge"
+}
+
+func (this *AudioMerger) InitConfig(jobConf string) (err error) {
+	confFp, openErr := os.Open(jobConf)
+	if openErr != nil {
+		err = errors.New(fmt.Sprintf("Open amerge config failed, %s", openErr.Error()))
+		return
+	}
+
+	config := AudioMergerConfig{}
+	decoder := json.NewDecoder(confFp)
+	decodeErr := decoder.Decode(&config)
+	if decodeErr != nil {
+		err = errors.New(fmt.Sprintf("Parse amerge config failed, %s", decodeErr.Error()))
+		return
+	}
+
+	if config.AmergeMaxFirstFileLength <= 0 {
+		this.maxFirstFileLength = AUDIO_MERGE_MAX_FIRST_FILE_LENGTH
+	}
+	if config.AmergeMaxSecondFileLength <= 0 {
+		this.maxSecondFileLength = AUDIO_MERGE_MAX_SECOND_FILE_LENGTH
+	}
+
+	this.mac = &digest.Mac{config.AccessKey, []byte(config.SecretKey)}
+
+	return
+}
+
 /*
 
-amerge/format/<format>/mime/<encoded mime>/bucket/<encoded bucket>/url/<encoded url>/duration/<[first|shortest|longest]>
+amerge
+/format/<string>
+/mime/<encoded mime>
+/bucket/<encoded bucket>
+/url/<encoded url>
+/duration/<[first|shortest|longest]>
 
 */
 
@@ -42,37 +90,30 @@ func (this *AudioMerger) parse(cmd string) (format string, mime string, bucket s
 	}
 
 	var decodeErr error
-	format = getParam(cmd, "format/[a-zA-Z0-9]+", "format")
-	mime, decodeErr = getParamDecoded(cmd, "mime/[0-9a-zA-Z-_=]+", "mime")
+	format = utils.GetParam(cmd, "format/[a-zA-Z0-9]+", "format")
+	mime, decodeErr = utils.GetParamDecoded(cmd, "mime/[0-9a-zA-Z-_=]+", "mime")
 	if decodeErr != nil {
 		err = errors.New("invalid amerge parameter 'mime'")
 		return
 	}
-	bucket, decodeErr = getParamDecoded(cmd, "bucket/[0-9a-zA-Z-_=]+", "bucket")
+	bucket, decodeErr = utils.GetParamDecoded(cmd, "bucket/[0-9a-zA-Z-_=]+", "bucket")
 	if decodeErr != nil {
 		err = errors.New("invalid amerge parameter 'bucket'")
 		return
 	}
-	url, decodeErr = getParamDecoded(cmd, "url/[0-9a-zA-Z-_=]+", "url")
+	url, decodeErr = utils.GetParamDecoded(cmd, "url/[0-9a-zA-Z-_=]+", "url")
 	if decodeErr != nil {
 		err = errors.New("invalid amerge parameter 'url'")
 		return
 	}
-	duration = getParam(cmd, "duration/(first|shortest|longest)", "duration")
+	duration = utils.GetParam(cmd, "duration/(first|shortest|longest)", "duration")
 	if duration == "" {
 		duration = "longest"
 	}
 	return
 }
 
-func (this *AudioMerger) Do(req UfopRequest) (result interface{}, contentType string, err error) {
-	//check first file &second file length criteria
-	if this.maxFirstFileLength <= 0 {
-		this.maxFirstFileLength = AUDIO_MERGE_MAX_FIRST_FILE_LENGTH
-	}
-	if this.maxSecondFileLength <= 0 {
-		this.maxSecondFileLength = AUDIO_MERGE_MAX_SECOND_FILE_LENGTH
-	}
+func (this *AudioMerger) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
 	//check first file
 	if req.Src.Fsize > this.maxFirstFileLength {
 		err = errors.New("first file length exceeds the limit")

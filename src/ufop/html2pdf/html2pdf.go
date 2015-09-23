@@ -1,6 +1,7 @@
-package ufop
+package html2pdf
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"ufop"
+	"ufop/utils"
 )
 
 const (
@@ -26,6 +29,11 @@ type Html2Pdfer struct {
 	maxCopies   int
 }
 
+type Html2PdferConfig struct {
+	Html2PdfMaxPageSize int64 `json:"html2pdf_max_page_size,omitempty"`
+	Html2PdfMaxCopies   int   `json:"html2pdf_max_copies,omitempty"`
+}
+
 type Html2PdfOptions struct {
 	Gray        bool
 	LowQuality  bool
@@ -34,6 +42,36 @@ type Html2PdfOptions struct {
 	Title       string
 	Collate     bool
 	Copies      int
+}
+
+func (this *Html2Pdfer) Name() string {
+	return "html2pdf"
+}
+
+func (this *Html2Pdfer) InitConfig(jobConf string) (err error) {
+	confFp, openErr := os.Open(jobConf)
+	if openErr != nil {
+		err = errors.New(fmt.Sprintf("Open html2pdf config failed, %s", openErr.Error()))
+		return
+	}
+
+	config := Html2PdferConfig{}
+	decoder := json.NewDecoder(confFp)
+	decodeErr := decoder.Decode(&config)
+	if decodeErr != nil {
+		err = errors.New(fmt.Sprintf("Parse html2pdf config failed, %s", decodeErr.Error()))
+		return
+	}
+
+	if config.Html2PdfMaxPageSize <= 0 {
+		this.maxPageSize = HTML2PDF_MAX_PAGE_SIZE
+	}
+
+	if config.Html2PdfMaxCopies <= 0 {
+		this.maxCopies = HTML2PDF_MAX_COPIES
+	}
+
+	return
 }
 
 func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) {
@@ -54,7 +92,7 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 	}
 
 	//get gray
-	grayStr := getParam(cmd, "gray/[0|1]", "gray")
+	grayStr := utils.GetParam(cmd, "gray/[0|1]", "gray")
 	if grayStr != "" {
 		grayInt, _ := strconv.Atoi(grayStr)
 		if grayInt == 1 {
@@ -63,7 +101,7 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 	}
 
 	//get low quality
-	lowStr := getParam(cmd, "low/[0|1]", "low")
+	lowStr := utils.GetParam(cmd, "low/[0|1]", "low")
 	if lowStr != "" {
 		lowInt, _ := strconv.Atoi(lowStr)
 		if lowInt == 1 {
@@ -72,13 +110,13 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 	}
 
 	//orient
-	options.Orientation = getParam(cmd, "orient/(Portrait|Landscape)", "orient")
+	options.Orientation = utils.GetParam(cmd, "orient/(Portrait|Landscape)", "orient")
 
 	//size
-	options.Size = getParam(cmd, "size/[A-B][0-8]", "size")
+	options.Size = utils.GetParam(cmd, "size/[A-B][0-8]", "size")
 
 	//title
-	title, decodeErr := getParamDecoded(cmd, "title/[0-9a-zA-Z-_=]+", "title")
+	title, decodeErr := utils.GetParamDecoded(cmd, "title/[0-9a-zA-Z-_=]+", "title")
 	if decodeErr != nil {
 		err = errors.New("invalid html2pdf parameter 'title'")
 		return
@@ -86,7 +124,7 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 	options.Title = title
 
 	//collate
-	collateStr := getParam(cmd, "collate/[0|1]", "collate")
+	collateStr := utils.GetParam(cmd, "collate/[0|1]", "collate")
 	if collateStr != "" {
 		collateInt, _ := strconv.Atoi(collateStr)
 		if collateInt == 0 {
@@ -95,7 +133,7 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 	}
 
 	//copies
-	copiesStr := getParam(cmd, `copies/\d+`, "copies")
+	copiesStr := utils.GetParam(cmd, `copies/\d+`, "copies")
 	if copiesStr != "" {
 		copiesInt, _ := strconv.Atoi(copiesStr)
 		if copiesInt <= 0 {
@@ -109,15 +147,7 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 	return
 }
 
-func (this *Html2Pdfer) Do(req UfopRequest) (result interface{}, contentType string, err error) {
-	if this.maxPageSize <= 0 {
-		this.maxPageSize = HTML2PDF_MAX_PAGE_SIZE
-	}
-
-	if this.maxCopies <= 0 {
-		this.maxCopies = HTML2PDF_MAX_COPIES
-	}
-
+func (this *Html2Pdfer) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
 	//if not text format, error it
 	if !strings.HasPrefix(req.Src.MimeType, "text/") {
 		err = errors.New("unsupported file mime type, only text/* allowed")
@@ -155,7 +185,7 @@ func (this *Html2Pdfer) Do(req UfopRequest) (result interface{}, contentType str
 		return
 	}
 
-	jobPrefix := md5Hex(req.Src.Url)
+	jobPrefix := utils.Md5Hex(req.Src.Url)
 
 	pageSuffix := "txt"
 	if strings.HasPrefix(req.Src.MimeType, "text/html") {

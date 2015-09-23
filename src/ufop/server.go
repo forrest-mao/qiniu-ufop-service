@@ -4,92 +4,44 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/qiniu/api.v6/auth/digest"
+	"github.com/qiniu/log"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 )
 
-var (
-	ufopPrefix  string
-	jobHandlers map[string]UfopJobHandler
-	unzipper    *UnZipper
-	mkzipper    *Mkziper
-	amerger     *AudioMerger
-	html2Pdfer  *Html2Pdfer
-	html2Imager *Html2Imager
-)
-
-type UfopJobHandler interface {
-	Do(ufopReq UfopRequest) (interface{}, string, error)
-}
-
 type UfopServer struct {
-	cfg *UfopConfig
+	cfg         *UfopConfig
+	jobHandlers map[string]UfopJobHandler
 }
 
 func NewServer(cfg *UfopConfig) *UfopServer {
 	serv := UfopServer{}
 	serv.cfg = cfg
+	serv.jobHandlers = make(map[string]UfopJobHandler, 0)
 	return &serv
 }
 
-func (this *UfopServer) registerJobHandlers() {
-	mac := digest.Mac{
-		AccessKey: this.cfg.AccessKey,
-		SecretKey: []byte(this.cfg.SecretKey),
-	}
-	jobHandlers = make(map[string]UfopJobHandler, 0)
-	ufopPrefix = this.cfg.UfopPrefix
-	//unzipper
-	unzipper = &UnZipper{
-		mac:              &mac,
-		maxZipFileLength: this.cfg.UnzipMaxZipFileLength,
-		maxFileLength:    this.cfg.UnzipMaxFileLength,
-		maxFileCount:     this.cfg.UnzipMaxFileCount,
-	}
+func (this *UfopServer) RegisterJobHandler(jobConf string, jobHandler interface{}) (err error) {
+	if h, ok := jobHandler.(UfopJobHandler); ok {
+		initErr := h.InitConfig(jobConf)
+		if initErr != nil {
+			err = errors.New(fmt.Sprintf("init job handler for cmd '%s' error, %s", h.Name(), initErr.Error()))
+			return
+		}
 
-	//mkzipper
-	mkzipper = &Mkziper{
-		mac:           &mac,
-		maxFileLength: this.cfg.MkzipMaxFileLength,
-		maxFileCount:  this.cfg.MkzipMaxFileCount,
+		this.jobHandlers[this.cfg.UfopPrefix+h.Name()] = h
+	} else {
+		err = errors.New("job handler must implement interface UfopJobHandler")
 	}
-
-	//audio merger
-	amerger = &AudioMerger{
-		mac:                 &mac,
-		maxFirstFileLength:  this.cfg.AmergeMaxFirstFileLength,
-		maxSecondFileLength: this.cfg.AmergeMaxSecondFileLength,
-	}
-
-	//html2pdf
-	html2Pdfer = &Html2Pdfer{
-		maxPageSize: this.cfg.Html2PdfMaxPageSize,
-		maxCopies:   this.cfg.Html2PdfMaxCopies,
-	}
-
-	//html2image
-	html2Imager = &Html2Imager{
-		maxPageSize: this.cfg.Html2ImageMaxPageSize,
-	}
-
-	jobHandlers[ufopPrefix+"unzip"] = unzipper
-	jobHandlers[ufopPrefix+"mkzip"] = mkzipper
-	jobHandlers[ufopPrefix+"amerge"] = amerger
-	jobHandlers[ufopPrefix+"html2pdf"] = html2Pdfer
-	jobHandlers[ufopPrefix+"html2image"] = html2Imager
+	return
 }
 
 func (this *UfopServer) Listen() {
-	//register
-	this.registerJobHandlers()
-
 	//define handler
-	http.HandleFunc("/uop", serveUfop)
+	http.HandleFunc("/uop", this.serveUfop)
 
 	//bind and listen
 	endPoint := fmt.Sprintf("%s:%d", this.cfg.ListenHost, this.cfg.ListenPort)
@@ -106,7 +58,7 @@ func (this *UfopServer) Listen() {
 	}
 }
 
-func serveUfop(w http.ResponseWriter, req *http.Request) {
+func (this *UfopServer) serveUfop(w http.ResponseWriter, req *http.Request) {
 	//check method
 	if req.Method != "POST" {
 		writeJsonError(w, 405, "method not allowed")
@@ -124,21 +76,21 @@ func serveUfop(w http.ResponseWriter, req *http.Request) {
 		writeJsonError(w, 500, "read ufop request body error")
 		return
 	}
-	log.Println(string(ufopReqData))
+	log.Info(string(ufopReqData))
 	err = json.Unmarshal(ufopReqData, &ufopReq)
 	if err != nil {
 		writeJsonError(w, 500, "parse ufop request body error")
 		return
 	}
 
-	ufopResult, ufopResultContentType, err = handleJob(ufopReq)
+	ufopResult, ufopResultContentType, err = handleJob(ufopReq, this.cfg.UfopPrefix, this.jobHandlers)
 	if err != nil {
 		ufopErr := UfopError{
 			Request: ufopReq,
 			Error:   err.Error(),
 		}
 		logBytes, _ := json.Marshal(&ufopErr)
-		log.Println(string(logBytes))
+		log.Error(string(logBytes))
 		writeJsonError(w, 400, err.Error())
 	} else {
 		switch ufopResultContentType {
@@ -150,7 +102,7 @@ func serveUfop(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func handleJob(ufopReq UfopRequest) (interface{}, string, error) {
+func handleJob(ufopReq UfopRequest, ufopPrefix string, jobHandlers map[string]UfopJobHandler) (interface{}, string, error) {
 	var ufopResult interface{}
 	var contentType string
 	var err error
@@ -178,12 +130,12 @@ func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) 
 	w.WriteHeader(statusCode)
 	data, err := json.Marshal(result)
 	if err != nil {
-		log.Println("encode ufop result error,", err)
+		log.Error("encode ufop result error,", err)
 		writeJsonError(w, 500, "encode ufop result error")
 	} else {
 		_, err := io.WriteString(w, string(data))
 		if err != nil {
-			log.Println("write json response error", err)
+			log.Error("write json response error", err)
 		}
 	}
 }
@@ -195,7 +147,7 @@ func writeOctetResultWithMime(w http.ResponseWriter, statusCode int, result inte
 	if respData := result.([]byte); respData != nil {
 		_, err := w.Write(respData)
 		if err != nil {
-			log.Println("write octect response error", err)
+			log.Error("write octect response error", err)
 		}
 	}
 }

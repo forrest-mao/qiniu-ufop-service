@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"github.com/qiniu/log"
 	"os"
 	"ufop"
+	"ufop/amerge"
+	"ufop/html2image"
+	"ufop/html2pdf"
+	"ufop/mkzip"
+	"ufop/unzip"
 )
 
 func help() {
@@ -33,10 +38,33 @@ func main() {
 	ufopConf := &ufop.UfopConfig{}
 	confErr := ufopConf.LoadFromFile(configFilePath)
 	if confErr != nil {
-		log.Println("load config file error,", confErr)
+		log.Error("load config file error,", confErr)
 		return
 	}
 
 	ufopServ := ufop.NewServer(ufopConf)
+
+	//register job handlers
+	if err := ufopServ.RegisterJobHandler("amerge.conf", &amerge.AudioMerger{}); err != nil {
+		log.Error(err)
+	}
+
+	if err := ufopServ.RegisterJobHandler("html2image.conf", &html2image.Html2Imager{}); err != nil {
+		log.Error(err)
+	}
+
+	if err := ufopServ.RegisterJobHandler("html2pdf.conf", &html2pdf.Html2Pdfer{}); err != nil {
+		log.Error(err)
+	}
+
+	if err := ufopServ.RegisterJobHandler("mkzip.conf", &mkzip.Mkzipper{}); err != nil {
+		log.Error(err)
+	}
+
+	if err := ufopServ.RegisterJobHandler("unzip.conf", &unzip.Unzipper{}); err != nil {
+		log.Error(err)
+	}
+
+	//listen
 	ufopServ.Listen()
 }

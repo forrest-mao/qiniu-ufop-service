@@ -4,6 +4,7 @@ build_script:
 
  - mv $RESOURCE/pkg/wkhtmltox-0.12.2_linux-trusty-amd64.deb .
  - mv $RESOURCE/qufop .
+ - mv $RESOURCE/qufop.conf .
  - mv $RESOURCE/html2pdf.conf .
  - mv $RESOURCE/ufop.yaml .
 
@@ -26,4 +27,4 @@ build_script:
  - sudo mv $RESOURCE/fonts/simsunb.ttf /usr/share/fonts/
  - sudo fc-cache
 
-run: ./qufop html2pdf.conf
+run: ./qufop qufop.conf

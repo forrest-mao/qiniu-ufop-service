@@ -2,4 +2,4 @@ image: ubuntu
 build_script:
  - echo building...
  - mv $RESOURCE/* .
-run: ./qufop mkzip.conf
+run: ./qufop qufop.conf

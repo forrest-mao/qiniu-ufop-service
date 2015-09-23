@@ -1,6 +1,7 @@
-package ufop
+package html2image
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"ufop"
+	"ufop/utils"
 )
 
 const (
@@ -22,6 +25,10 @@ const (
 
 type Html2Imager struct {
 	maxPageSize int64
+}
+
+type Html2ImagerConfig struct {
+	Html2ImageMaxPageSize int64 `json:"html2image_max_page_size,omitempty"`
 }
 
 type Html2ImageOptions struct {
@@ -34,6 +41,32 @@ type Html2ImageOptions struct {
 	Width   int
 	Quality int
 	Force   bool
+}
+
+func (this *Html2Imager) Name() string {
+	return "html2image"
+}
+
+func (this *Html2Imager) InitConfig(jobConf string) (err error) {
+	confFp, openErr := os.Open(jobConf)
+	if openErr != nil {
+		err = errors.New(fmt.Sprintf("Open html2image config failed, %s", openErr.Error()))
+		return
+	}
+
+	config := Html2ImagerConfig{}
+	decoder := json.NewDecoder(confFp)
+	decodeErr := decoder.Decode(&config)
+	if decodeErr != nil {
+		err = errors.New(fmt.Sprintf("Parse html2image config failed, %s", decodeErr.Error()))
+		return
+	}
+
+	if config.Html2ImageMaxPageSize <= 0 {
+		this.maxPageSize = HTML2IMAGE_MAX_PAGE_SIZE
+	}
+
+	return
 }
 
 func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err error) {
@@ -49,7 +82,7 @@ func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err erro
 	}
 
 	//croph
-	cropHStr := getParam(cmd, `croph/\d+`, "croph")
+	cropHStr := utils.GetParam(cmd, `croph/\d+`, "croph")
 	if cropHStr != "" {
 		cropH, _ := strconv.Atoi(cropHStr)
 		if cropH <= 0 {
@@ -61,7 +94,7 @@ func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err erro
 	}
 
 	//cropw
-	cropWStr := getParam(cmd, `cropw/\d+`, "cropw")
+	cropWStr := utils.GetParam(cmd, `cropw/\d+`, "cropw")
 	if cropWStr != "" {
 		cropW, _ := strconv.Atoi(cropWStr)
 		if cropW <= 0 {
@@ -73,7 +106,7 @@ func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err erro
 	}
 
 	//cropx
-	cropXStr := getParam(cmd, `cropx/\d+`, "cropx")
+	cropXStr := utils.GetParam(cmd, `cropx/\d+`, "cropx")
 	fmt.Println(cropXStr)
 	if cropXStr != "" {
 		cropX, _ := strconv.Atoi(cropXStr)
@@ -86,7 +119,7 @@ func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err erro
 	}
 
 	//cropy
-	cropYStr := getParam(cmd, `cropy/\d+`, "cropy")
+	cropYStr := utils.GetParam(cmd, `cropy/\d+`, "cropy")
 	if cropYStr != "" {
 		cropY, _ := strconv.Atoi(cropYStr)
 		if cropY <= 0 {
@@ -98,13 +131,13 @@ func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err erro
 	}
 
 	//format
-	formatStr := getParam(cmd, "format/(png|jpg|jpeg)", "format")
+	formatStr := utils.GetParam(cmd, "format/(png|jpg|jpeg)", "format")
 	if formatStr != "" {
 		options.Format = formatStr
 	}
 
 	//height
-	heightStr := getParam(cmd, `height/\d+`, "height")
+	heightStr := utils.GetParam(cmd, `height/\d+`, "height")
 	if heightStr != "" {
 		height, _ := strconv.Atoi(heightStr)
 		if height <= 0 {
@@ -116,7 +149,7 @@ func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err erro
 	}
 
 	//width
-	widthStr := getParam(cmd, `width/\d+`, "width")
+	widthStr := utils.GetParam(cmd, `width/\d+`, "width")
 	if widthStr != "" {
 		width, _ := strconv.Atoi(widthStr)
 		if width <= 0 {
@@ -128,7 +161,7 @@ func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err erro
 	}
 
 	//quality
-	qualityStr := getParam(cmd, `quality/\d+`, "quality")
+	qualityStr := utils.GetParam(cmd, `quality/\d+`, "quality")
 	if qualityStr != "" {
 		quality, _ := strconv.Atoi(qualityStr)
 		if quality > 100 || quality <= 0 {
@@ -140,7 +173,7 @@ func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err erro
 	}
 
 	//force
-	forceStr := getParam(cmd, "force/[0|1]", "force")
+	forceStr := utils.GetParam(cmd, "force/[0|1]", "force")
 	if forceStr != "" {
 		force, _ := strconv.Atoi(forceStr)
 		if force == 1 {
@@ -152,11 +185,7 @@ func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err erro
 
 }
 
-func (this *Html2Imager) Do(req UfopRequest) (result interface{}, contentType string, err error) {
-	if this.maxPageSize <= 0 {
-		this.maxPageSize = HTML2IMAGE_MAX_PAGE_SIZE
-	}
-
+func (this *Html2Imager) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
 	//if not text format, error it
 	if !strings.HasPrefix(req.Src.MimeType, "text/") {
 		err = errors.New("unsupported file mime type, only text/* allowed")
@@ -189,7 +218,7 @@ func (this *Html2Imager) Do(req UfopRequest) (result interface{}, contentType st
 		return
 	}
 
-	jobPrefix := md5Hex(req.Src.Url)
+	jobPrefix := utils.Md5Hex(req.Src.Url)
 
 	pageSuffix := "txt"
 	if strings.HasPrefix(req.Src.MimeType, "text/html") {

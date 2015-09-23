@@ -27,27 +27,6 @@ type UfopConfig struct {
 
 	//make you ufop instance name unique
 	UfopPrefix string `json:"ufop_prefix"`
-
-	//ak & sk, optional somethimes
-	AccessKey string `json:"access_key,omitempty"`
-	SecretKey string `json:"secret_key,omitempty"`
-
-	//service config, optional
-
-	UnzipMaxZipFileLength int64 `json:"unzip_max_zip_file_length,omitempty"`
-	UnzipMaxFileLength    int64 `json:"unzip_max_file_length,omitempty"`
-	UnzipMaxFileCount     int   `json:"unzip_max_file_count,omitempty"`
-
-	MkzipMaxFileLength int64 `json:"mkzip_max_file_length,omitempty"`
-	MkzipMaxFileCount  int   `json:"mkzip_max_file_count,omitempty"`
-
-	AmergeMaxFirstFileLength  int64 `json:"amerge_max_first_file_length,omitempty"`
-	AmergeMaxSecondFileLength int64 `json:"amerge_max_second_file_length,omitempty"`
-
-	Html2PdfMaxPageSize int64 `json:"html2pdf_max_page_size,omitempty"`
-	Html2PdfMaxCopies   int   `json:"html2pdf_max_copies,omitempty"`
-
-	Html2ImageMaxPageSize int64 `json:"html2image_max_page_size,omitempty"`
 }
 
 func (this *UfopConfig) LoadFromFile(configFilePath string) (err error) {

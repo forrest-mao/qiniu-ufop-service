@@ -1,8 +1,9 @@
-package ufop
+package unzip
 
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/qiniu/api.v6/auth/digest"
@@ -12,8 +13,11 @@ import (
 	"github.com/qiniu/api.v6/rs"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
+	"ufop"
+	"ufop/utils"
 	"unicode/utf8"
 )
 
@@ -23,21 +27,65 @@ const (
 	UNZIP_MAX_FILE_COUNT      int   = 10                //10
 )
 
-type UnZipResult struct {
-	Files []UnZipFile `json:"files"`
+type UnzipResult struct {
+	Files []UnzipFile `json:"files"`
 }
 
-type UnZipFile struct {
+type UnzipFile struct {
 	Key   string `json:"key"`
 	Hash  string `json:"hash,omitempty"`
 	Error string `json:"error,omitempty"`
 }
 
-type UnZipper struct {
+type Unzipper struct {
 	mac              *digest.Mac
 	maxZipFileLength int64
 	maxFileLength    int64
 	maxFileCount     int
+}
+
+type UnzipperConfig struct {
+	//ak & sk
+	AccessKey string `json:"access_key"`
+	SecretKey string `json:"secret_key"`
+
+	UnzipMaxZipFileLength int64 `json:"unzip_max_zip_file_length,omitempty"`
+	UnzipMaxFileLength    int64 `json:"unzip_max_file_length,omitempty"`
+	UnzipMaxFileCount     int   `json:"unzip_max_file_count,omitempty"`
+}
+
+func (this *Unzipper) Name() string {
+	return "unzip"
+}
+
+func (this *Unzipper) InitConfig(jobConf string) (err error) {
+	confFp, openErr := os.Open(jobConf)
+	if openErr != nil {
+		err = errors.New(fmt.Sprintf("Open unzip config failed, %s", openErr.Error()))
+		return
+	}
+
+	config := UnzipperConfig{}
+	decoder := json.NewDecoder(confFp)
+	decodeErr := decoder.Decode(&config)
+	if decodeErr != nil {
+		err = errors.New(fmt.Sprintf("Parse unzip config failed, %s", decodeErr.Error()))
+		return
+	}
+
+	if config.UnzipMaxFileCount <= 0 {
+		this.maxFileCount = UNZIP_MAX_FILE_COUNT
+	}
+	if config.UnzipMaxFileLength <= 0 {
+		this.maxFileLength = UNZIP_MAX_FILE_LENGTH
+	}
+	if config.UnzipMaxZipFileLength <= 0 {
+		this.maxZipFileLength = UNZIP_MAX_ZIP_FILE_LENGTH
+	}
+
+	this.mac = &digest.Mac{config.AccessKey, []byte(config.SecretKey)}
+
+	return
 }
 
 /*
@@ -45,7 +93,7 @@ type UnZipper struct {
 unzip/bucket/<encoded bucket>/prefix/<encoded prefix>/overwrite/<[0|1]>
 
 */
-func (this *UnZipper) parse(cmd string) (bucket string, prefix string, overwrite bool, err error) {
+func (this *Unzipper) parse(cmd string) (bucket string, prefix string, overwrite bool, err error) {
 	pattern := "^unzip/bucket/[0-9a-zA-Z-_=]+(/prefix/[0-9a-zA-Z-_=]+){0,1}(/overwrite/(0|1)){0,1}$"
 	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
@@ -54,17 +102,17 @@ func (this *UnZipper) parse(cmd string) (bucket string, prefix string, overwrite
 	}
 
 	var decodeErr error
-	bucket, decodeErr = getParamDecoded(cmd, "bucket/[0-9a-zA-Z-_=]+", "bucket")
+	bucket, decodeErr = utils.GetParamDecoded(cmd, "bucket/[0-9a-zA-Z-_=]+", "bucket")
 	if decodeErr != nil {
 		err = errors.New("invalid unzip parameter 'bucket'")
 		return
 	}
-	prefix, decodeErr = getParamDecoded(cmd, "prefix/[0-9a-zA-Z-_=]+", "prefix")
+	prefix, decodeErr = utils.GetParamDecoded(cmd, "prefix/[0-9a-zA-Z-_=]+", "prefix")
 	if decodeErr != nil {
 		err = errors.New("invalid unzip parameter 'prefix'")
 		return
 	}
-	overwriteStr := getParam(cmd, "overwrite/(0|1)", "overwrite")
+	overwriteStr := utils.GetParam(cmd, "overwrite/(0|1)", "overwrite")
 	if overwriteStr != "" {
 		overwriteVal, paramErr := strconv.ParseInt(overwriteStr, 10, 64)
 		if paramErr != nil {
@@ -78,18 +126,8 @@ func (this *UnZipper) parse(cmd string) (bucket string, prefix string, overwrite
 	return
 }
 
-func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType string, err error) {
+func (this *Unzipper) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
 	contentType = "application/json"
-	//set zip file check criteria
-	if this.maxFileCount <= 0 {
-		this.maxFileCount = UNZIP_MAX_FILE_COUNT
-	}
-	if this.maxFileLength <= 0 {
-		this.maxFileLength = UNZIP_MAX_FILE_LENGTH
-	}
-	if this.maxZipFileLength <= 0 {
-		this.maxZipFileLength = UNZIP_MAX_ZIP_FILE_LENGTH
-	}
 	//check mimetype
 	if req.Src.MimeType != "application/zip" {
 		err = errors.New("unsupported mimetype to unzip")
@@ -166,8 +204,8 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 	policy := rs.PutPolicy{
 		Scope: bucket,
 	}
-	var unzipResult UnZipResult
-	unzipResult.Files = make([]UnZipFile, 0)
+	var unzipResult UnzipResult
+	unzipResult.Files = make([]UnzipFile, 0)
 	var tErr error
 	//iterate the zip file
 	for _, zipFile := range zipFiles {
@@ -176,7 +214,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 		fileSize := fileInfo.Size()
 
 		if !utf8.Valid([]byte(fileName)) {
-			fileName, tErr = gbk2Utf8(fileName)
+			fileName, tErr = utils.Gbk2Utf8(fileName)
 			if tErr != nil {
 				err = errors.New(fmt.Sprintf("unsupported file name encoding, %s", tErr.Error()))
 				return
@@ -207,7 +245,7 @@ func (this *UnZipper) Do(req UfopRequest) (result interface{}, contentType strin
 			policy.Scope = bucket + ":" + fileName
 		}
 		uptoken := policy.Token(this.mac)
-		var unzipFile UnZipFile
+		var unzipFile UnzipFile
 		unzipFile.Key = fileName
 		if fileSize <= rputThreshold {
 			var fputRet fio.PutRet
