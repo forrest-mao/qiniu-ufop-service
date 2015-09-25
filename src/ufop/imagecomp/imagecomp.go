@@ -1,6 +1,7 @@
 package imagecomp
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"github.com/qiniu/api.v6/auth/digest"
@@ -346,7 +347,6 @@ func (this *ImageComposer) Do(req UfopRequest) (result interface{}, contentType 
 	}()
 
 	//calc the dst image size
-
 	dstImageWidth := 0
 	dstImageHeight := 0
 
@@ -381,7 +381,30 @@ func (this *ImageComposer) Do(req UfopRequest) (result interface{}, contentType 
 		for _, imgObj := range rowSlice {
 			//calc the draw start point
 
+			//draw
+			draw.Draw(dstImage, imgObj.Bounds(), imgObj, drawStartPoint, draw.Src)
 		}
 	}
+
+	contentType = formatMimes[format]
+
+	var buffer = bytes.NewBuffer(nil)
+	switch contentType {
+	case "image/png":
+		eErr := png.Encode(buffer, *dstImage)
+		if eErr != nil {
+			err = errors.New(fmt.Sprintf("create dst png image failed, %s", eErr))
+			return
+		}
+
+	case "image/jpeg":
+		eErr := jpeg.Encode(buffer, *dstImage, jpeg.Options{100})
+		if eErr != nil {
+			err = errors.New(fmt.Sprintf("create dst jpeg image failed, %s", eErr))
+			return
+		}
+	}
+
+	result = buffer.Bytes()
 	return
 }
