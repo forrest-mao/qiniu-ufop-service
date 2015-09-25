@@ -8,6 +8,7 @@ import (
 	"ufop/amerge"
 	"ufop/html2image"
 	"ufop/html2pdf"
+	"ufop/imagecomp"
 	"ufop/mkzip"
 	"ufop/unzip"
 )
@@ -64,6 +65,10 @@ func main() {
 	}
 
 	if err := ufopServ.RegisterJobHandler("unzip.conf", &unzip.Unzipper{}); err != nil {
+		log.Error(err)
+	}
+
+	if err := ufopServ.RegisterJobHandler("imagecomp.conf", &imagecomp.ImageComposer{}); err != nil {
 		log.Error(err)
 	}
 
