@@ -30,6 +30,15 @@ const (
 	IMAGECOMP_ORDER_BY_COL = 1
 )
 
+const (
+	H_ALIGN_LEFT   = "left"
+	H_ALIGN_RIGHT  = "right"
+	H_ALIGN_CENTER = "center"
+	V_ALIGN_TOP    = "top"
+	V_ALIGN_BOTTOM = "bottom"
+	V_ALIGN_MIDDLE = "middle"
+)
+
 type ImageComposer struct {
 	mac *digest.Mac
 }
@@ -70,6 +79,8 @@ imagecomp
 /format/<string> 	optional, default jpg
 /rows/<int>			optional, default 1
 /cols/<int>			optional, default 1
+/halign/<string> 	optional, default left
+/valign/<string> 	optional, default top
 /order/<int>		optional, default 1
 /alpha/<int> 		optional, default 0
 /bgcolor/<string>	optional, default gray
@@ -77,9 +88,9 @@ imagecomp
 /url/<string>
 
 */
-func (this *ImageComposer) parse(cmd string) (bucket, format string, rows, cols, order int, bgColor color.Color,
-	urls []map[string]string, err error) {
-	pattern := `^imagecomp/bucket/[0-9a-zA-Z-_=]+(/format/(png|jpg|jpeg)|/rows/\d+|/cols/\d+|/order/(0|1)|/alpha/\d+|/bgcolor/[0-9a-zA-Z-_=]+){0,6}(/url/[0-9a-zA-Z-_=]+)+$`
+func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign string,
+	rows, cols, order int, bgColor color.Color, urls []map[string]string, err error) {
+	pattern := `^imagecomp/bucket/[0-9a-zA-Z-_=]+(/format/(png|jpg|jpeg)|/halign/(left|right|center)|/valign/(top|bottom|middle)|/rows/\d+|/cols/\d+|/order/(0|1)|/alpha/\d+|/bgcolor/[0-9a-zA-Z-_=]+){0,8}(/url/[0-9a-zA-Z-_=]+)+$`
 
 	matched, _ := regexp.Match(pattern, []byte(cmd))
 	if !matched {
@@ -112,6 +123,18 @@ func (this *ImageComposer) parse(cmd string) (bucket, format string, rows, cols,
 	//cols
 	if colsStr := utils.GetParam(cmd, `cols/\d+`, "cols"); colsStr != "" {
 		cols, _ = strconv.Atoi(colsStr)
+	}
+
+	//halign
+	halign = H_ALIGN_LEFT
+	if v := utils.GetParam(cmd, "halign/(left|right|center)", "halign"); v != "" {
+		halign = v
+	}
+
+	//valign
+	valign = V_ALIGN_TOP
+	if v := utils.GetParam(cmd, "valign/(top|bottom|middle)", "valign"); v != "" {
+		valign = v
 	}
 
 	//order
@@ -224,7 +247,7 @@ func (this *ImageComposer) parse(cmd string) (bucket, format string, rows, cols,
 }
 
 func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
-	bucket, format, rows, cols, order, bgColor, urls, pErr := this.parse(req.Cmd)
+	bucket, format, halign, valign, rows, cols, order, bgColor, urls, pErr := this.parse(req.Cmd)
 	if pErr != nil {
 		err = pErr
 		return
@@ -402,17 +425,43 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 			if imgObj == nil {
 				continue
 			}
-			//calc draw rect
+
+			imgWidth := imgObj.Bounds().Max.X - imgObj.Bounds().Min.X
+			imgHeight := imgObj.Bounds().Max.Y - imgObj.Bounds().Min.Y
+
+			//calc the draw rect start point
 			p1 := image.Point{
 				colIndex * blockWidth,
 				rowIndex * blockHeight,
 			}
 
+			//check halign and valign
+			//default is left and top
+			switch halign {
+			case H_ALIGN_CENTER:
+				offset := (blockWidth - imgWidth) / 2
+				p1.X += offset
+			case H_ALIGN_RIGHT:
+				offset := (blockWidth - imgWidth)
+				p1.X += offset
+			}
+
+			switch valign {
+			case V_ALIGN_MIDDLE:
+				offset := (blockHeight - imgHeight) / 2
+				p1.Y += offset
+			case V_ALIGN_BOTTOM:
+				offset := (blockHeight - imgHeight)
+				p1.Y += offset
+			}
+
+			//calc the draw rect end point
 			p2 := image.Point{}
 			p2.X = p1.X + blockWidth
 			p2.Y = p1.Y + blockHeight
 
 			drawRect := image.Rect(p1.X, p1.Y, p2.X, p2.Y)
+
 			fmt.Println(drawRect)
 			//draw
 			draw.Draw(dstImage, drawRect, imgObj, imgObj.Bounds().Min, draw.Src)

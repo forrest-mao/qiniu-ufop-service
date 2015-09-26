@@ -3,8 +3,8 @@
 imagecomp
 /bucket/<string>
 /format/<string> 	optional, default jpg
-/halign/<string> 	optional, default Center
-/valign/<string> 	optional, default Middle
+/halign/<string> 	optional, default left
+/valign/<string> 	optional, default top
 /row/<int>			optional, default 1
 /col/<int>			optional, default 1
 /order/<int>		optional, default 0
@@ -17,15 +17,15 @@ imagecomp
 
 halign取值
 
-Left, Right, Center
+left, right, center
 
 valign取值 
 
-Top, Bottom, Middle
+top, bottom, middle
 
 
-halign default = Center
-valign default = Middle
+halign default = left
+valign default = top
 
 
 order取值
