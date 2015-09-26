@@ -145,6 +145,11 @@ func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign str
 
 	//alpha
 	alpha := 255
+
+	if format == "png" {
+		alpha = 0
+	}
+
 	if alphaStr := utils.GetParam(cmd, "alpha/(0|1)", "alpha"); alphaStr != "" {
 		alpha, _ = strconv.Atoi(alphaStr)
 	}
@@ -279,7 +284,8 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	}
 
 	//download images by url
-	localImgPaths := make(map[string]string)
+	localImgPathTypeMap := make(map[string]string)
+	localImgPaths := make([]string, 0)
 	remoteImgUrls := make(map[string]string)
 	for _, urlItem := range urls {
 		iUrl := urlItem["url"]
@@ -296,12 +302,13 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 			return
 		}
 
-		localImgPaths[iLocalPath] = dContentType
+		localImgPaths = append(localImgPaths, iLocalPath)
+		localImgPathTypeMap[iLocalPath] = dContentType
 		remoteImgUrls[iLocalPath] = iUrl
 	}
 
 	defer func() {
-		for iPath, _ := range localImgPaths {
+		for iPath, _ := range localImgPathTypeMap {
 			os.Remove(iPath)
 		}
 	}()
@@ -318,10 +325,11 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	var rowIndex int = 0
 	var colIndex int = 0
 
-	for iPath, iContentType := range localImgPaths {
-		imgFp, openErr := os.Open(iPath)
+	for _, iLocalPath := range localImgPaths {
+		iContentType := localImgPathTypeMap[iLocalPath]
+		imgFp, openErr := os.Open(iLocalPath)
 		if openErr != nil {
-			err = errors.New(fmt.Sprintf("open local image of remote '%s' failed, %s", remoteImgUrls[iPath], openErr.Error()))
+			err = errors.New(fmt.Sprintf("open local image of remote '%s' failed, %s", remoteImgUrls[iLocalPath], openErr.Error()))
 			return
 		}
 		localImgFps = append(localImgFps, imgFp)
@@ -332,13 +340,13 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 		if iContentType == "image/png" {
 			imgObj, dErr = png.Decode(imgFp)
 			if dErr != nil {
-				err = errors.New(fmt.Sprintf("decode png image of remote '%s' failed, %s", remoteImgUrls[iPath], dErr.Error()))
+				err = errors.New(fmt.Sprintf("decode png image of remote '%s' failed, %s", remoteImgUrls[iLocalPath], dErr.Error()))
 				return
 			}
 		} else if iContentType == "image/jpeg" {
 			imgObj, dErr = jpeg.Decode(imgFp)
 			if dErr != nil {
-				err = errors.New(fmt.Sprintf("decode jpeg image of remote '%s' failed, %s", remoteImgUrls[iPath], dErr.Error()))
+				err = errors.New(fmt.Sprintf("decode jpeg image of remote '%s' failed, %s", remoteImgUrls[iLocalPath], dErr.Error()))
 				return
 			}
 		}
