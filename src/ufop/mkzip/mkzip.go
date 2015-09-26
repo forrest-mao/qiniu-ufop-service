@@ -208,9 +208,11 @@ func (this *Mkzipper) Do(req ufop.UfopRequest) (result interface{}, contentType 
 
 	statRet, statErr := qclient.BatchStat(nil, statItems)
 
-	if _, ok := statErr.(*rpc.ErrorInfo); !ok {
-		err = errors.New(fmt.Sprintf("batch stat error, %s", statErr.Error()))
-		return
+	if statErr != nil {
+		if _, ok := statErr.(*rpc.ErrorInfo); !ok {
+			err = errors.New(fmt.Sprintf("batch stat error, %s", statErr.Error()))
+			return
+		}
 	}
 
 	for index := 0; index < len(statRet); index++ {
