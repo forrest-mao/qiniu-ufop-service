@@ -144,17 +144,18 @@ func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign str
 	}
 
 	//alpha
-	alpha := 0
+	alpha := 255
 	if alphaStr := utils.GetParam(cmd, "alpha/(0|1)", "alpha"); alphaStr != "" {
 		alpha, _ = strconv.Atoi(alphaStr)
 	}
 
-	if alpha < 0 || alpha > 100 {
-		err = errors.New("invalid imagecomp parameter 'alhpa', should between [0,100]")
+	if alpha < 0 || alpha > 255 {
+		err = errors.New("invalid imagecomp parameter 'alhpa', should between [0,255]")
+		return
 	}
 
-	//bgcolor
-	bgColor = color.RGBA{0xF0, 0xF0, 0xF0, 0xff}
+	//bgcolor, default white
+	bgColor = color.RGBA{0xFF, 0xFF, 0xFF, uint8(alpha)}
 
 	var bgColorStr string
 	bgColorStr, decodeErr = utils.GetParamDecoded(cmd, "bgcolor/[0-9a-zA-Z-_=]+", "bgcolor")
@@ -317,7 +318,6 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	var rowIndex int = 0
 	var colIndex int = 0
 
-	fmt.Println(rows, cols)
 	for iPath, iContentType := range localImgPaths {
 		imgFp, openErr := os.Open(iPath)
 		if openErr != nil {
@@ -343,7 +343,6 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 			}
 		}
 
-		fmt.Println(rowIndex, colIndex)
 		localImgObjs[rowIndex][colIndex] = imgObj
 
 		//update index
@@ -380,7 +379,6 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	rowImageMaxWidths := make([]int, 0)
 	rowImageMaxHeights := make([]int, 0)
 
-	fmt.Println(localImgObjs)
 	for _, rowSlice := range localImgObjs {
 		if len(rowSlice) == 0 {
 			continue
@@ -414,7 +412,6 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	dstRect := image.Rect(0, 0, dstImageWidth, dstImageHeight)
 	dstImage := image.NewRGBA(dstRect)
 
-	//draw background
 	draw.Draw(dstImage, dstImage.Bounds(), image.NewUniform(bgColor), image.ZP, draw.Src)
 
 	for rowIndex, rowSlice := range localImgObjs {
@@ -462,7 +459,6 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 
 			drawRect := image.Rect(p1.X, p1.Y, p2.X, p2.Y)
 
-			fmt.Println(drawRect)
 			//draw
 			draw.Draw(dstImage, drawRect, imgObj, imgObj.Bounds().Min, draw.Src)
 		}
@@ -491,7 +487,7 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 
 	result = buffer.Bytes()
 
-	fp, _ := os.Create("test.jpg")
+	fp, _ := os.Create("test.png")
 	fp.Write(buffer.Bytes())
 	return
 }
