@@ -1,0 +1,5 @@
+image: ubuntu
+build_script:
+ - echo building...
+ - mv $RESOURCE/* .
+run: ./qufop qufop.conf
