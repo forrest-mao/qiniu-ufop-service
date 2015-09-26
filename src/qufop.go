@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/qiniu/api.v6/conf"
 	"github.com/qiniu/log"
 	"os"
 	"ufop"
@@ -21,8 +22,13 @@ func help() {
 	fmt.Printf("Usage: qufop <UfopConfig>\r\n\r\nVERSION: %s\r\n", VERSION)
 }
 
+func setQiniuHosts() {
+	conf.RS_HOST = "http://rs.qiniu.com"
+}
+
 func main() {
 	log.SetOutput(os.Stdout)
+	setQiniuHosts()
 
 	args := os.Args
 	argc := len(args)
