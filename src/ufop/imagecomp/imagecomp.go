@@ -150,7 +150,7 @@ func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign str
 		alpha = 0
 	}
 
-	if alphaStr := utils.GetParam(cmd, "alpha/(0|1)", "alpha"); alphaStr != "" {
+	if alphaStr := utils.GetParam(cmd, `alpha/\d+`, "alpha"); alphaStr != "" {
 		alpha, _ = strconv.Atoi(alphaStr)
 	}
 
