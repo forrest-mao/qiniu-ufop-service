@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/qiniu/api.v6/auth/digest"
 	"github.com/qiniu/api.v6/rs"
+	"github.com/qiniu/rpc"
 	"image"
 	"image/color"
 	"image/draw"
@@ -267,20 +268,38 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 
 	//check urls validity, all should in bucket
 	statItems := make([]rs.EntryPath, 0)
+	statUrls := make([]string, 0)
 	for _, urlItem := range urls {
 		iPath := urlItem["path"]
+		iUrl := urlItem["url"]
 		entryPath := rs.EntryPath{
 			bucket, iPath,
 		}
 		statItems = append(statItems, entryPath)
+		statUrls = append(statUrls, iUrl)
 	}
 
 	qclient := rs.New(this.mac)
 
-	_, statErr := qclient.BatchStat(nil, statItems)
-	if statErr != nil {
-		err = errors.New(fmt.Sprintf("batch stat error, %s", statErr))
+	statRet, statErr := qclient.BatchStat(nil, statItems)
+
+	if _, ok := statErr.(*rpc.ErrorInfo); !ok {
+		err = errors.New(fmt.Sprintf("batch stat error, %s", statErr.Error()))
 		return
+	}
+
+	for index := 0; index < len(statRet); index++ {
+		ret := statRet[index]
+		if ret.Code != 200 {
+			if ret.Code == 612 {
+				err = errors.New(fmt.Sprintf("batch stat '%s' error, no such file or directory", statUrls[index]))
+			} else if ret.Code == 631 {
+				err = errors.New(fmt.Sprintf("batch stat '%s' error, no such bucket", statUrls[index]))
+			} else {
+				err = errors.New(fmt.Sprintf("batch stat '%s' error, %d", statUrls[index], ret.Code))
+			}
+			return
+		}
 	}
 
 	//download images by url
