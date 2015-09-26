@@ -138,7 +138,7 @@ func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign str
 	}
 
 	//order
-	order = 1
+	order = IMAGECOMP_ORDER_BY_COL
 	if orderStr := utils.GetParam(cmd, "order/(0|1)", "order"); orderStr != "" {
 		order, _ = strconv.Atoi(orderStr)
 	}
@@ -224,14 +224,14 @@ func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign str
 
 		if urlCount < rows*cols {
 			switch order {
-			case 0:
-				if urlCount < (rows-1)*cols {
-					err = errors.New("url count less than (rows-1)*cols error")
+			case IMAGECOMP_ORDER_BY_ROW:
+				if urlCount < (rows-1)*cols+1 {
+					err = errors.New("url count less than (rows-1)*cols+1 error")
 					return
 				}
-			case 1:
-				if urlCount < rows*(cols-1) {
-					err = errors.New("url count less than rows*(cols-1) error")
+			case IMAGECOMP_ORDER_BY_COL:
+				if urlCount < rows*(cols-1)+1 {
+					err = errors.New("url count less than rows*(cols-1)+1 error")
 					return
 				}
 			}
