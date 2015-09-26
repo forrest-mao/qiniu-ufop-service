@@ -486,8 +486,5 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	}
 
 	result = buffer.Bytes()
-
-	fp, _ := os.Create("test.png")
-	fp.Write(buffer.Bytes())
 	return
 }
