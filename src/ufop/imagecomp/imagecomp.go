@@ -116,12 +116,13 @@ func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign str
 
 	//check later by url count
 	//rows
-	rows = 1
+	rows = 0
 	if rowsStr := utils.GetParam(cmd, `rows/\d+`, "rows"); rowsStr != "" {
 		rows, _ = strconv.Atoi(rowsStr)
 	}
 
 	//cols
+	cols = 0
 	if colsStr := utils.GetParam(cmd, `cols/\d+`, "cols"); colsStr != "" {
 		cols, _ = strconv.Atoi(colsStr)
 	}
@@ -222,7 +223,30 @@ func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign str
 		return
 	}
 
-	if cols != 0 {
+	if rows == 0 && cols == 0 {
+		cols = 1
+		rows = urlCount / cols
+	} else if rows == 0 && cols != 0 {
+		if cols > urlCount {
+			err = errors.New("cols larger than url count error")
+			return
+		}
+		if urlCount%cols == 0 {
+			rows = urlCount / cols
+		} else {
+			rows = urlCount/cols + 1
+		}
+	} else if rows != 0 && cols == 0 {
+		if rows > urlCount {
+			err = errors.New("rows larger than url count error")
+			return
+		}
+		if urlCount%rows == 0 {
+			cols = urlCount / rows
+		} else {
+			cols = urlCount/rows + 1
+		}
+	} else {
 		if urlCount > rows*cols {
 			err = errors.New("url count larger than rows*cols error")
 			return
@@ -241,12 +265,6 @@ func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign str
 					return
 				}
 			}
-		}
-	} else {
-		if urlCount%rows == 0 {
-			cols = urlCount / rows
-		} else {
-			cols = urlCount/rows + 1
 		}
 	}
 

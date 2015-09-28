@@ -5,11 +5,11 @@ imagecomp
 /format/<string> 	optional, default jpg
 /halign/<string> 	optional, default left
 /valign/<string> 	optional, default top
-/row/<int>			optional, default 1
-/col/<int>			optional, default 1
+/rows/<int>			optional, default 1
+/cols/<int>			optional, default 1
 /order/<int>		optional, default 0
 /alpha/<int> 		optional, default 0
-/bgcolor/<string>	optional, default gray
+/bgcolor/<string>	optional, default white
 /url/<string>		
 /url/<string>
 ...
@@ -30,8 +30,8 @@ valign default = top
 
 order取值
 
-0 表示从行开始依次粘贴(默认)
-1 表示从列开始依次粘贴
+0 表示从行开始依次粘贴
+1 表示从列开始依次粘贴(默认)
 
 提供的row和col的值必须能够和urls的数量匹配起来，最好是 row * col = len(urls)
 如果提供的 len(urls) > row * col 直接报错，url count larger than row * col;
