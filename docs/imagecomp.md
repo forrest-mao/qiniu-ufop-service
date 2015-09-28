@@ -237,7 +237,7 @@ qntest-imagecomp
 /valign/bottom
 /rows/3
 /cols/3
-/order/1
+/order/0
 /url/aHR0cDovLzd4bHQyay5jb20xLnowLmdsYi5jbG91ZGRuLmNvbS9uMS5wbmc=
 /url/aHR0cDovLzd4bHQyay5jb20xLnowLmdsYi5jbG91ZGRuLmNvbS9uMi5wbmc=
 /url/aHR0cDovLzd4bHQyay5jb20xLnowLmdsYi5jbG91ZGRuLmNvbS9uMy5wbmc=
