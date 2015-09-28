@@ -370,6 +370,9 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 				err = errors.New(fmt.Sprintf("decode jpeg image of remote '%s' failed, %s", remoteImgUrls[iLocalPath], dErr.Error()))
 				return
 			}
+		} else {
+			err = errors.New(fmt.Sprintf("unsupported src image format '%s' of url '%s'", iContentType, remoteImgUrls[iLocalPath]))
+			return
 		}
 
 		localImgObjs[rowIndex][colIndex] = imgObj
