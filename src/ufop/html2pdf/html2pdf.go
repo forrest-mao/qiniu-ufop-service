@@ -25,13 +25,13 @@ const (
 )
 
 type Html2Pdfer struct {
-	maxPageSize int64
+	maxPageSize uint64
 	maxCopies   int
 }
 
 type Html2PdferConfig struct {
-	Html2PdfMaxPageSize int64 `json:"html2pdf_max_page_size,omitempty"`
-	Html2PdfMaxCopies   int   `json:"html2pdf_max_copies,omitempty"`
+	Html2PdfMaxPageSize uint64 `json:"html2pdf_max_page_size,omitempty"`
+	Html2PdfMaxCopies   int    `json:"html2pdf_max_copies,omitempty"`
 }
 
 type Html2PdfOptions struct {

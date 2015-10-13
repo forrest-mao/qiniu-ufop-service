@@ -24,11 +24,11 @@ const (
 )
 
 type Html2Imager struct {
-	maxPageSize int64
+	maxPageSize uint64
 }
 
 type Html2ImagerConfig struct {
-	Html2ImageMaxPageSize int64 `json:"html2image_max_page_size,omitempty"`
+	Html2ImageMaxPageSize uint64 `json:"html2image_max_page_size,omitempty"`
 }
 
 type Html2ImageOptions struct {

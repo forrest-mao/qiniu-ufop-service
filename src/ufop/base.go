@@ -8,7 +8,7 @@ type UfopRequest struct {
 type UfopRequestSrc struct {
 	Url      string `json:"url"`
 	MimeType string `json:"mimetype"`
-	Fsize    int64  `json:"fsize"`
+	Fsize    uint64 `json:"fsize"`
 }
 
 type UfopError struct {

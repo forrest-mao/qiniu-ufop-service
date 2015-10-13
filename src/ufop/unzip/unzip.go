@@ -22,9 +22,16 @@ import (
 )
 
 const (
-	UNZIP_MAX_ZIP_FILE_LENGTH int64 = 1 * 1024 * 1024 * 1024
-	UNZIP_MAX_FILE_LENGTH     int64 = 100 * 1024 * 1024 //100MB
-	UNZIP_MAX_FILE_COUNT      int   = 10                //10
+	UNZIP_MAX_ZIP_FILE_LENGTH uint64 = 1 * 1024 * 1024 * 1024
+	UNZIP_MAX_FILE_LENGTH     uint64 = 100 * 1024 * 1024 //100MB
+	UNZIP_MAX_FILE_COUNT      int    = 10                //10
+)
+
+const (
+	ZIP_VERSION_20 = 20
+	ZIP_VERSION_45 = 45
+
+	UINT32_MAX = (1 << 32) - 1
 )
 
 type UnzipResult struct {
@@ -39,8 +46,8 @@ type UnzipFile struct {
 
 type Unzipper struct {
 	mac              *digest.Mac
-	maxZipFileLength int64
-	maxFileLength    int64
+	maxZipFileLength uint64
+	maxFileLength    uint64
 	maxFileCount     int
 }
 
@@ -49,9 +56,9 @@ type UnzipperConfig struct {
 	AccessKey string `json:"access_key"`
 	SecretKey string `json:"secret_key"`
 
-	UnzipMaxZipFileLength int64 `json:"unzip_max_zip_file_length,omitempty"`
-	UnzipMaxFileLength    int64 `json:"unzip_max_file_length,omitempty"`
-	UnzipMaxFileCount     int   `json:"unzip_max_file_count,omitempty"`
+	UnzipMaxZipFileLength uint64 `json:"unzip_max_zip_file_length,omitempty"`
+	UnzipMaxFileLength    uint64 `json:"unzip_max_file_length,omitempty"`
+	UnzipMaxFileCount     int    `json:"unzip_max_file_count,omitempty"`
 }
 
 func (this *Unzipper) Name() string {
@@ -192,8 +199,7 @@ func (this *Unzipper) Do(req ufop.UfopRequest) (result interface{}, contentType 
 	}
 	//check file size
 	for _, zipFile := range zipFiles {
-		fileInfo := zipFile.FileHeader.FileInfo()
-		fileSize := fileInfo.Size()
+		fileSize := zipFile.UncompressedSize64
 		//check file size
 		if fileSize > this.maxFileLength {
 			err = errors.New("zip file length exceeds the limit")
@@ -219,7 +225,7 @@ func (this *Unzipper) Do(req ufop.UfopRequest) (result interface{}, contentType 
 	for _, zipFile := range zipFiles {
 		fileInfo := zipFile.FileHeader.FileInfo()
 		fileName := zipFile.FileHeader.Name
-		fileSize := fileInfo.Size()
+		fileSize := zipFile.UncompressedSize64
 
 		if !utf8.Valid([]byte(fileName)) {
 			fileName, tErr = utils.Gbk2Utf8(fileName)

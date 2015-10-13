@@ -26,8 +26,8 @@ const (
 
 type AudioMerger struct {
 	mac                 *digest.Mac
-	maxFirstFileLength  int64
-	maxSecondFileLength int64
+	maxFirstFileLength  uint64
+	maxSecondFileLength uint64
 }
 
 type AudioMergerConfig struct {
@@ -35,8 +35,8 @@ type AudioMergerConfig struct {
 	AccessKey string `json:"access_key"`
 	SecretKey string `json:"secret_key"`
 
-	AmergeMaxFirstFileLength  int64 `json:"amerge_max_first_file_length,omitempty"`
-	AmergeMaxSecondFileLength int64 `json:"amerge_max_second_file_length,omitempty"`
+	AmergeMaxFirstFileLength  uint64 `json:"amerge_max_first_file_length,omitempty"`
+	AmergeMaxSecondFileLength uint64 `json:"amerge_max_second_file_length,omitempty"`
 }
 
 func (this *AudioMerger) Name() string {
@@ -148,7 +148,7 @@ func (this *AudioMerger) Do(req ufop.UfopRequest) (result interface{}, contentTy
 		return
 	}
 	//check second file
-	if sEntry.Fsize > this.maxSecondFileLength {
+	if uint64(sEntry.Fsize) > this.maxSecondFileLength {
 		err = errors.New("second file length exceeds the limit")
 		return
 	}
