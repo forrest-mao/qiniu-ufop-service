@@ -27,13 +27,6 @@ const (
 	UNZIP_MAX_FILE_COUNT      int    = 10                //10
 )
 
-const (
-	ZIP_VERSION_20 = 20
-	ZIP_VERSION_45 = 45
-
-	UINT32_MAX = (1 << 32) - 1
-)
-
 type UnzipResult struct {
 	Files []UnzipFile `json:"files"`
 }
@@ -214,7 +207,7 @@ func (this *Unzipper) Do(req ufop.UfopRequest) (result interface{}, contentType 
 		Workers:   1,
 	}
 	rio.SetSettings(&rputSettings)
-	var rputThreshold int64 = 100 * 1024 * 1024
+	var rputThreshold uint64 = 100 * 1024 * 1024
 	policy := rs.PutPolicy{
 		Scope: bucket,
 	}
@@ -272,7 +265,7 @@ func (this *Unzipper) Do(req ufop.UfopRequest) (result interface{}, contentType 
 
 		} else {
 			var rputRet rio.PutRet
-			rErr := rio.Put(nil, &rputRet, uptoken, fileName, unzipReader, fileSize, nil)
+			rErr := rio.Put(nil, &rputRet, uptoken, fileName, unzipReader, int64(fileSize), nil)
 			if rErr != nil {
 				unzipFile.Error = fmt.Sprintf("save unzip file to bucket error, %s", rErr.Error())
 			} else {
