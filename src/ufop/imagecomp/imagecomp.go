@@ -302,9 +302,14 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	statRet, statErr := qclient.BatchStat(nil, statItems)
 
 	if statErr != nil {
-		if _, ok := statErr.(*rpc.ErrorInfo); !ok {
+		if sErr, ok := statErr.(*rpc.ErrorInfo); !ok {
 			err = errors.New(fmt.Sprintf("batch stat error, %s", statErr.Error()))
 			return
+		} else {
+			if sErr.Err != "" {
+				err = errors.New(fmt.Sprintf("batch stat error, %s", sErr.Err))
+				return
+			}
 		}
 	}
 
