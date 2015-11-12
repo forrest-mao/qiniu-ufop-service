@@ -1,0 +1,31 @@
+<component name="libraryTable">
+  <library name="GOPATH &lt;qiniu-ufop-service&gt;">
+    <CLASSES>
+      <root url="file://$USER_HOME$/GoProjects/src/github.com" />
+      <root url="file://$USER_HOME$/GoProjects/src/golang.org" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <excluded>
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/qiniu/api.v6/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/golang/x/text/encoding/testdata" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/qiniu/bytes/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/astaxie/beego/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/golang.org/x/snappy/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/astaxie/beego/utils/testdata" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/golang/snappy/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/golang.org/x/text/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/golang.org/x/x/text/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/qiniu/rpc/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/golang/x/text/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/golang.org/x/x/text/encoding/testdata" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/yanunon/oss-go-api/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/syndtr/goleveldb/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/golang.org/x/text/encoding/testdata" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/golang/text/.git" />
+      <root url="file://$PROJECT_DIR$" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/qiniu/log/.git" />
+      <root url="file://$USER_HOME$/GoProjects/src/github.com/golang/text/encoding/testdata" />
+    </excluded>
+  </library>
+</component>
