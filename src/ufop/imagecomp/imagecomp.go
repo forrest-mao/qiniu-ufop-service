@@ -22,7 +22,6 @@ import (
 	"time"
 	"ufop"
 	"ufop/utils"
-	"io/ioutil"
 )
 
 const (
@@ -33,10 +32,10 @@ const (
 )
 
 const (
-	H_ALIGN_LEFT = "left"
-	H_ALIGN_RIGHT = "right"
+	H_ALIGN_LEFT   = "left"
+	H_ALIGN_RIGHT  = "right"
 	H_ALIGN_CENTER = "center"
-	V_ALIGN_TOP = "top"
+	V_ALIGN_TOP    = "top"
 	V_ALIGN_BOTTOM = "bottom"
 	V_ALIGN_MIDDLE = "middle"
 )
@@ -92,7 +91,7 @@ imagecomp
 
 */
 func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign string,
-rows, cols, order int, bgColor color.Color, margin int, urls []map[string]string, err error) {
+	rows, cols, order int, bgColor color.Color, margin int, urls []map[string]string, err error) {
 	pattern := `^imagecomp/bucket/[0-9a-zA-Z-_=]+(/format/(png|jpg|jpeg)|/halign/(left|right|center)|/valign/(top|bottom|middle)|/rows/\d+|/cols/\d+|/order/(0|1)|/alpha/\d+|/margin/\d+|/bgcolor/[0-9a-zA-Z-_=]+){0,9}(/url/[0-9a-zA-Z-_=]+)+$`
 
 	matched, _ := regexp.Match(pattern, []byte(cmd))
@@ -239,36 +238,36 @@ rows, cols, order int, bgColor color.Color, margin int, urls []map[string]string
 			err = errors.New("cols larger than url count error")
 			return
 		}
-		if urlCount % cols == 0 {
+		if urlCount%cols == 0 {
 			rows = urlCount / cols
 		} else {
-			rows = urlCount / cols + 1
+			rows = urlCount/cols + 1
 		}
 	} else if rows != 0 && cols == 0 {
 		if rows > urlCount {
 			err = errors.New("rows larger than url count error")
 			return
 		}
-		if urlCount % rows == 0 {
+		if urlCount%rows == 0 {
 			cols = urlCount / rows
 		} else {
-			cols = urlCount / rows + 1
+			cols = urlCount/rows + 1
 		}
 	} else {
-		if urlCount > rows * cols {
+		if urlCount > rows*cols {
 			err = errors.New("url count larger than rows*cols error")
 			return
 		}
 
-		if urlCount < rows * cols {
+		if urlCount < rows*cols {
 			switch order {
 			case IMAGECOMP_ORDER_BY_ROW:
-				if urlCount < (rows - 1) * cols + 1 {
+				if urlCount < (rows-1)*cols+1 {
 					err = errors.New("url count less than (rows-1)*cols+1 error")
 					return
 				}
 			case IMAGECOMP_ORDER_BY_COL:
-				if urlCount < rows * (cols - 1) + 1 {
+				if urlCount < rows*(cols-1)+1 {
 					err = errors.New("url count less than rows*(cols-1)+1 error")
 					return
 				}
@@ -368,7 +367,7 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	//layout the images
 	localImgFps := make([]*os.File, 0)
 
-	var localImgObjs [][]image.Image = make([][]image.Image, rows * cols)
+	var localImgObjs [][]image.Image = make([][]image.Image, rows*cols)
 
 	for index := 0; index < rows; index++ {
 		localImgObjs[index] = make([]image.Image, cols)
@@ -411,7 +410,7 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 		//update index
 		switch order {
 		case IMAGECOMP_ORDER_BY_ROW:
-			if colIndex < cols - 1 {
+			if colIndex < cols-1 {
 				colIndex += 1
 			} else {
 				colIndex = 0
@@ -419,7 +418,7 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 			}
 
 		case IMAGECOMP_ORDER_BY_COL:
-			if rowIndex < rows - 1 {
+			if rowIndex < rows-1 {
 				rowIndex += 1
 			} else {
 				rowIndex = 0
@@ -453,8 +452,8 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 		for _, imgObj := range rowSlice {
 			if imgObj != nil {
 				bounds := imgObj.Bounds()
-				rowImageColWidths = append(rowImageColWidths, bounds.Max.X - bounds.Min.X)
-				rowImageColHeights = append(rowImageColHeights, bounds.Max.Y - bounds.Min.Y)
+				rowImageColWidths = append(rowImageColWidths, bounds.Max.X-bounds.Min.X)
+				rowImageColHeights = append(rowImageColHeights, bounds.Max.Y-bounds.Min.Y)
 			}
 		}
 
@@ -469,8 +468,8 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	blockHeight := utils.MaxInt(rowImageMaxHeights...)
 
 	//dest image width & height with margin
-	dstImageWidth = blockWidth * cols + (cols + 1) * margin
-	dstImageHeight = blockHeight * rows + (rows + 1) * margin
+	dstImageWidth = blockWidth*cols + (cols+1)*margin
+	dstImageHeight = blockHeight*rows + (rows+1)*margin
 
 	//compose the dst image
 	dstRect := image.Rect(0, 0, dstImageWidth, dstImageHeight)
@@ -492,8 +491,8 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 
 			//calc the draw rect start point
 			p1 := image.Point{
-				colIndex * blockWidth + (colIndex + 1) * margin,
-				rowIndex * blockHeight + (rowIndex + 1) * margin,
+				colIndex*blockWidth + (colIndex+1)*margin,
+				rowIndex*blockHeight + (rowIndex+1)*margin,
 			}
 
 			//check halign and valign
@@ -550,7 +549,5 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	}
 
 	result = buffer.Bytes()
-
-	ioutil.WriteFile("/home/jemy/test.png", buffer.Bytes(), 0666)
 	return
 }
