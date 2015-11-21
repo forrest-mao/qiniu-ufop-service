@@ -151,3 +151,28 @@ func writeOctetResultWithMime(w http.ResponseWriter, statusCode int, result inte
 		}
 	}
 }
+
+func writeOctetResultWithMimeFromFile(w http.ResponseWriter, statusCode int, result interface{}, mimeType string) {
+	//delete the tmp file
+	var filePath string
+	if v, ok := result.(string); ok {
+		filePath = v
+	}
+	defer os.Remove(filePath)
+	//set response
+	if mimeType != "" {
+		w.Header().Set("Content-Type", mimeType)
+	}
+	//output result
+	resultFp, openErr := os.Open(filePath)
+	if openErr != nil {
+		log.Error("open result file error", openErr)
+		return
+	}
+	defer resultFp.Close()
+	_, cpErr := io.Copy(w, resultFp)
+	if cpErr != nil {
+		log.Error("output result content error", cpErr)
+		return
+	}
+}

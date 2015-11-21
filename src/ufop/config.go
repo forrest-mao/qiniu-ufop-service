@@ -11,9 +11,9 @@ import (
 var defaultUfopConfig UfopConfig = UfopConfig{
 	ListenPort:     9100,
 	ListenHost:     "0.0.0.0",
-	ReadTimeout:    1800,
-	WriteTimeout:   1800,
-	MaxHeaderBytes: 1 << 16,
+	ReadTimeout:    60,
+	WriteTimeout:   60,
+	MaxHeaderBytes: 1 << 12,
 }
 
 type UfopConfig struct {
