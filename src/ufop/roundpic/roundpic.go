@@ -202,7 +202,7 @@ func (this *RoundPicer) Do(req ufop.UfopRequest) (result interface{}, resultType
 	}
 
 	//write dest image
-	oTmpFpath := filepath.Join(os.TempDir(), fmt.Sprintf("roundpic_tmp_result_%d.png", time.Now().Unix()))
+	oTmpFpath := filepath.Join(os.TempDir(), fmt.Sprintf("roundpic_tmp_result_%d.png", time.Now().UnixNano()))
 	wErr := maskDraw.WriteImage(oTmpFpath)
 	if wErr != nil {
 		err = errors.New(fmt.Sprintf("write dest image failed, %s", wErr.Error()))

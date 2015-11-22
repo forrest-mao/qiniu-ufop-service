@@ -7,6 +7,10 @@ build_script:
  - mv $RESOURCE/roundpic.conf .
  - mv $RESOURCE/ufop.yaml .
 
+ - sudo apt-get -y update
+ - sudo apt-get -y install gcc
+ - sudo apt-get -y install libmagickcore-dev
  - sudo apt-get -y install libmagickwand-dev
+ - sudo apt-get -y autoremove
 
 run: ./qufop qufop.conf
