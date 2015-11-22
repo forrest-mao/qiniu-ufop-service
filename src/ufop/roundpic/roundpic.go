@@ -176,7 +176,7 @@ func (this *RoundPicer) Do(req ufop.UfopRequest) (result interface{}, resultType
 	roundDraw := imagick.NewDrawingWand()
 	defer roundDraw.Destroy()
 	roundDraw.SetFillColor(backDraw)
-	roundDraw.RoundRectangle(0, 0, float64(srcImgWidth), float64(srcImgHeight), radiusX, radiusY)
+	roundDraw.RoundRectangle(0, 0, float64(srcImgWidth-1), float64(srcImgHeight-1), radiusX, radiusY)
 
 	//draw round pic
 	dErr := maskDraw.DrawImage(roundDraw)
