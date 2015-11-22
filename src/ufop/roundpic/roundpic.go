@@ -202,9 +202,7 @@ func (this *RoundPicer) Do(req ufop.UfopRequest) (result interface{}, resultType
 	}
 
 	//write dest image
-	rIndex := strings.LastIndex(req.Src.MimeType, "/")
-	dstFormat := req.Src.MimeType[rIndex + 1:]
-	oTmpFpath := filepath.Join(os.TempDir(), fmt.Sprintf("roundpic_tmp_result_%d.%s", time.Now().Unix(), dstFormat))
+	oTmpFpath := filepath.Join(os.TempDir(), fmt.Sprintf("roundpic_tmp_result_%d.png", time.Now().Unix()))
 	wErr := maskDraw.WriteImage(oTmpFpath)
 	if wErr != nil {
 		err = errors.New(fmt.Sprintf("write dest image failed, %s", wErr.Error()))
@@ -215,7 +213,7 @@ func (this *RoundPicer) Do(req ufop.UfopRequest) (result interface{}, resultType
 	//write result
 	result = oTmpFpath
 	resultType = ufop.RESULT_TYPE_OCTECT
-	contentType = req.Src.MimeType
+	contentType = "image/png"
 
 	return
 }
@@ -224,7 +222,7 @@ func getRadius(cmdParams RoundPicParams, srcImgWidth, srcImgHeight int) (radiusX
 	if cmdParams.Radius != "" {
 		var radius float64
 		if strings.HasSuffix(cmdParams.Radius, "%") {
-			percentStr := cmdParams.Radius[:len(cmdParams.Radius) - 1]
+			percentStr := cmdParams.Radius[:len(cmdParams.Radius) -1]
 			percent, _ := strconv.ParseFloat(percentStr, 64)
 			if percent > 50 {
 				percent = 50
@@ -243,7 +241,7 @@ func getRadius(cmdParams RoundPicParams, srcImgWidth, srcImgHeight int) (radiusX
 	} else {
 		//radius-x
 		if strings.HasSuffix(cmdParams.RadiusX, "%") {
-			percentStr := cmdParams.Radius[:len(cmdParams.RadiusX) - 1]
+			percentStr := cmdParams.RadiusX[:len(cmdParams.RadiusX) - 1]
 			percent, _ := strconv.ParseFloat(percentStr, 64)
 			if percent > 50 {
 				percent = 50
@@ -260,7 +258,7 @@ func getRadius(cmdParams RoundPicParams, srcImgWidth, srcImgHeight int) (radiusX
 
 		//radius-y
 		if strings.HasSuffix(cmdParams.RadiusY, "%") {
-			percentStr := cmdParams.Radius[:len(cmdParams.RadiusY) - 1]
+			percentStr := cmdParams.RadiusY[:len(cmdParams.RadiusY) - 1]
 			percent, _ := strconv.ParseFloat(percentStr, 64)
 			if percent > 50 {
 				percent = 50
