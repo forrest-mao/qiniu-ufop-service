@@ -12,13 +12,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"ufop"
 	"ufop/utils"
-	"path/filepath"
-	"time"
 )
 
 const (
@@ -222,7 +222,7 @@ func getRadius(cmdParams RoundPicParams, srcImgWidth, srcImgHeight int) (radiusX
 	if cmdParams.Radius != "" {
 		var radius float64
 		if strings.HasSuffix(cmdParams.Radius, "%") {
-			percentStr := cmdParams.Radius[:len(cmdParams.Radius) -1]
+			percentStr := cmdParams.Radius[:len(cmdParams.Radius)-1]
 			percent, _ := strconv.ParseFloat(percentStr, 64)
 			if percent > 50 {
 				percent = 50
@@ -241,7 +241,7 @@ func getRadius(cmdParams RoundPicParams, srcImgWidth, srcImgHeight int) (radiusX
 	} else {
 		//radius-x
 		if strings.HasSuffix(cmdParams.RadiusX, "%") {
-			percentStr := cmdParams.RadiusX[:len(cmdParams.RadiusX) - 1]
+			percentStr := cmdParams.RadiusX[:len(cmdParams.RadiusX)-1]
 			percent, _ := strconv.ParseFloat(percentStr, 64)
 			if percent > 50 {
 				percent = 50
@@ -258,7 +258,7 @@ func getRadius(cmdParams RoundPicParams, srcImgWidth, srcImgHeight int) (radiusX
 
 		//radius-y
 		if strings.HasSuffix(cmdParams.RadiusY, "%") {
-			percentStr := cmdParams.RadiusY[:len(cmdParams.RadiusY) - 1]
+			percentStr := cmdParams.RadiusY[:len(cmdParams.RadiusY)-1]
 			percent, _ := strconv.ParseFloat(percentStr, 64)
 			if percent > 50 {
 				percent = 50
