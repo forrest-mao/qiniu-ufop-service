@@ -33,9 +33,9 @@ func (this *UfopServer) RegisterJobHandler(jobConf string, jobHandler interface{
 			return
 		}
 
-		this.jobHandlers[this.cfg.UfopPrefix+h.Name()] = h
+		this.jobHandlers[this.cfg.UfopPrefix + h.Name()] = h
 	} else {
-		err = errors.New("job handler must implement interface UfopJobHandler")
+		err = errors.New(fmt.Sprintf("job handler of [%s] must implement interface UfopJobHandler", jobConf))
 	}
 	return
 }

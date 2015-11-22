@@ -11,11 +11,12 @@ import (
 	"ufop/html2pdf"
 	"ufop/imagecomp"
 	"ufop/mkzip"
+	"ufop/roundpic"
 	"ufop/unzip"
 )
 
 const (
-	VERSION = "1.3"
+	VERSION = "1.4"
 )
 
 func help() {
@@ -75,6 +76,10 @@ func main() {
 	}
 
 	if err := ufopServ.RegisterJobHandler("imagecomp.conf", &imagecomp.ImageComposer{}); err != nil {
+		log.Error(err)
+	}
+
+	if err := ufopServ.RegisterJobHandler("roundpic.conf", &roundpic.RoundPicer{}); err != nil {
 		log.Error(err)
 	}
 
