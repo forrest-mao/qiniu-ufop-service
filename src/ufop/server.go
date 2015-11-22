@@ -166,7 +166,7 @@ func writeOctetResultWithMimeFromFile(w http.ResponseWriter, statusCode int, res
 	if v, ok := result.(string); ok {
 		filePath = v
 	}
-	//defer os.Remove(filePath)
+	defer os.Remove(filePath)
 	//set response
 	if mimeType != "" {
 		w.Header().Set("Content-Type", mimeType)
