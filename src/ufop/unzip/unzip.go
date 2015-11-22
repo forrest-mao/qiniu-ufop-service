@@ -103,7 +103,7 @@ unzip/bucket/<encoded bucket>/prefix/<encoded prefix>/overwrite/<[0|1]>
 */
 func (this *Unzipper) parse(cmd string) (bucket string, prefix string, overwrite bool, err error) {
 	pattern := "^unzip/bucket/[0-9a-zA-Z-_=]+(/prefix/[0-9a-zA-Z-_=]+){0,1}(/overwrite/(0|1)){0,1}$"
-	matched, _ := regexp.Match(pattern, []byte(cmd))
+	matched, _ := regexp.MatchString(pattern, cmd)
 	if !matched {
 		err = errors.New("invalid unzip command format")
 		return
@@ -134,8 +134,14 @@ func (this *Unzipper) parse(cmd string) (bucket string, prefix string, overwrite
 	return
 }
 
-func (this *Unzipper) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
-	contentType = "application/json"
+func (this *Unzipper) Do(req ufop.UfopRequest) (result interface{}, resultType int, contentType string, err error) {
+	//parse command
+	bucket, prefix, overwrite, pErr := this.parse(req.Cmd)
+	if pErr != nil {
+		err = pErr
+		return
+	}
+
 	//check mimetype
 	if req.Src.MimeType != "application/zip" {
 		err = errors.New("unsupported mimetype to unzip")
@@ -144,13 +150,6 @@ func (this *Unzipper) Do(req ufop.UfopRequest) (result interface{}, contentType 
 	//check zip file length
 	if req.Src.Fsize > this.maxZipFileLength {
 		err = errors.New("src zip file length exceeds the limit")
-		return
-	}
-
-	//parse command
-	bucket, prefix, overwrite, pErr := this.parse(req.Cmd)
-	if pErr != nil {
-		err = pErr
 		return
 	}
 
@@ -274,6 +273,11 @@ func (this *Unzipper) Do(req ufop.UfopRequest) (result interface{}, contentType 
 		}
 		unzipResult.Files = append(unzipResult.Files, unzipFile)
 	}
+
+	//write result
 	result = unzipResult
+	resultType = ufop.RESULT_TYPE_JSON
+	contentType = ufop.CONTENT_TYPE_JSON
+
 	return
 }

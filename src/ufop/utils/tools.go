@@ -60,3 +60,13 @@ func MaxInt(array ...int) int {
 	}
 	return max
 }
+
+func MinInt(array ...int) int {
+	min := array[0]
+	for _, val := range array {
+		if val <= min {
+			min = val
+		}
+	}
+	return min
+}

@@ -65,7 +65,7 @@ func (this *ImageComposer) InitConfig(jobConf string) (err error) {
 	decoder := json.NewDecoder(confFp)
 	decodeErr := decoder.Decode(&config)
 	if decodeErr != nil {
-		err = errors.New(fmt.Sprintf("Parse mkzip config failed, %s", decodeErr.Error()))
+		err = errors.New(fmt.Sprintf("Parse imagecomp config failed, %s", decodeErr.Error()))
 		return
 	}
 
@@ -94,7 +94,7 @@ func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign str
 	rows, cols, order int, bgColor color.Color, margin int, urls []map[string]string, err error) {
 	pattern := `^imagecomp/bucket/[0-9a-zA-Z-_=]+(/format/(png|jpg|jpeg)|/halign/(left|right|center)|/valign/(top|bottom|middle)|/rows/\d+|/cols/\d+|/order/(0|1)|/alpha/\d+|/margin/\d+|/bgcolor/[0-9a-zA-Z-_=]+){0,9}(/url/[0-9a-zA-Z-_=]+)+$`
 
-	matched, _ := regexp.Match(pattern, []byte(cmd))
+	matched, _ := regexp.MatchString(pattern, cmd)
 	if !matched {
 		err = errors.New("invalid imagecomp command format")
 		return
@@ -278,7 +278,7 @@ func (this *ImageComposer) parse(cmd string) (bucket, format, halign, valign str
 	return
 }
 
-func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
+func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, resultType int, contentType string, err error) {
 	bucket, format, halign, valign, rows, cols, order, bgColor, margin, urls, pErr := this.parse(req.Cmd)
 	if pErr != nil {
 		err = pErr
@@ -452,8 +452,8 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 		for _, imgObj := range rowSlice {
 			if imgObj != nil {
 				bounds := imgObj.Bounds()
-				rowImageColWidths = append(rowImageColWidths, bounds.Max.X-bounds.Min.X)
-				rowImageColHeights = append(rowImageColHeights, bounds.Max.Y-bounds.Min.Y)
+				rowImageColWidths = append(rowImageColWidths, bounds.Dx())
+				rowImageColHeights = append(rowImageColHeights, bounds.Dy())
 			}
 		}
 
@@ -527,6 +527,7 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 		}
 	}
 
+	//write result
 	contentType = formatMimes[format]
 
 	var buffer = bytes.NewBuffer(nil)
@@ -549,5 +550,6 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, content
 	}
 
 	result = buffer.Bytes()
+	result = ufop.RESULT_TYPE_OCTECT
 	return
 }

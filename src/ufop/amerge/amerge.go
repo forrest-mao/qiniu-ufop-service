@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"github.com/qiniu/api.v6/auth/digest"
 	"github.com/qiniu/api.v6/rs"
+	"github.com/qiniu/log"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -88,7 +88,7 @@ amerge
 
 func (this *AudioMerger) parse(cmd string) (format string, mime string, bucket string, url string, duration string, err error) {
 	pattern := "^amerge/format/[a-zA-Z0-9]+/mime/[0-9a-zA-Z-_=]+/bucket/[0-9a-zA-Z-_=]+/url/[0-9a-zA-Z-_=]+(/duration/(first|shortest|longest)){0,1}$"
-	matched, _ := regexp.Match(pattern, []byte(cmd))
+	matched, _ := regexp.MatchString(pattern, cmd)
 	if !matched {
 		err = errors.New("invalid amerge command format")
 		return
@@ -118,7 +118,14 @@ func (this *AudioMerger) parse(cmd string) (format string, mime string, bucket s
 	return
 }
 
-func (this *AudioMerger) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
+func (this *AudioMerger) Do(req ufop.UfopRequest) (result interface{}, resultType int, contentType string, err error) {
+	//parse command
+	dstFormat, dstMime, secondFileBucket, secondFileUrl, dstDuration, pErr := this.parse(req.Cmd)
+	if pErr != nil {
+		err = pErr
+		return
+	}
+
 	//check first file
 	if req.Src.Fsize > this.maxFirstFileLength {
 		err = errors.New("first file length exceeds the limit")
@@ -126,12 +133,6 @@ func (this *AudioMerger) Do(req ufop.UfopRequest) (result interface{}, contentTy
 	}
 	if !strings.HasPrefix(req.Src.MimeType, "audio/") {
 		err = errors.New("first file mimetype not supported")
-		return
-	}
-	//parse command
-	dstFormat, dstMime, secondFileBucket, secondFileUrl, dstDuration, pErr := this.parse(req.Cmd)
-	if pErr != nil {
-		err = pErr
 		return
 	}
 
@@ -223,7 +224,7 @@ func (this *AudioMerger) Do(req ufop.UfopRequest) (result interface{}, contentTy
 	//be sure to delete temp files
 	defer os.Remove(fTmpFname)
 	defer os.Remove(sTmpFname)
-	defer os.Remove(oTmpFname)
+
 	//prepare command
 	mergeCmdParams := []string{
 		"-y",
@@ -251,37 +252,31 @@ func (this *AudioMerger) Do(req ufop.UfopRequest) (result interface{}, contentTy
 	stdErrData, readErr := ioutil.ReadAll(stdErrPipe)
 	if readErr != nil {
 		err = errors.New(fmt.Sprintf("read ffmpeg command stderr error, %s", readErr.Error()))
+		defer os.Remove(oTmpFname)
 		return
 	}
 
 	//check stderr output & output file
 	if string(stdErrData) != "" {
-		log.Println(string(stdErrData))
+		log.Error(string(stdErrData))
 	}
 
 	if waitErr := mergeCmd.Wait(); waitErr != nil {
 		err = errors.New(fmt.Sprintf("wait ffmpeg to exit error, %s", waitErr))
+		defer os.Remove(oTmpFname)
 		return
 	}
 
-	if oFileInfo, statErr := os.Stat(oTmpFname); statErr == nil {
-		if oFileInfo.Size() > 0 {
-			oTmpFp, openErr := os.Open(oTmpFname)
-			if openErr != nil {
-				err = errors.New(fmt.Sprintf("open ffmpeg output result error, %s", openErr.Error()))
-				return
-			}
-			defer oTmpFp.Close()
-			outputBytes, readErr := ioutil.ReadAll(oTmpFp)
-			if readErr != nil {
-				err = errors.New(fmt.Sprintf("read ffmpeg output result error, %s", readErr.Error()))
-				return
-			}
-			result = outputBytes
-		} else {
-			err = errors.New("audio merge with no valid output result")
-		}
+	if oFileInfo, statErr := os.Stat(oTmpFname); statErr != nil || oFileInfo.Size() == 0 {
+		err = errors.New("audio merge with no valid output result")
+		defer os.Remove(oTmpFname)
+		return
 	}
+
+	//write result
+	result = oTmpFname
+	resultType = ufop.RESULT_TYPE_OCTECT
 	contentType = dstMime
+
 	return
 }

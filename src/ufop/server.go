@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -69,6 +70,7 @@ func (this *UfopServer) serveUfop(w http.ResponseWriter, req *http.Request) {
 	var err error
 	var ufopReq UfopRequest
 	var ufopResult interface{}
+	var ufopResultType int
 	var ufopResultContentType string
 
 	ufopReqData, err := ioutil.ReadAll(req.Body)
@@ -83,7 +85,7 @@ func (this *UfopServer) serveUfop(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ufopResult, ufopResultContentType, err = handleJob(ufopReq, this.cfg.UfopPrefix, this.jobHandlers)
+	ufopResult, ufopResultType, ufopResultContentType, err = handleJob(ufopReq, this.cfg.UfopPrefix, this.jobHandlers)
 	if err != nil {
 		ufopErr := UfopError{
 			Request: ufopReq,
@@ -93,17 +95,23 @@ func (this *UfopServer) serveUfop(w http.ResponseWriter, req *http.Request) {
 		log.Error(string(logBytes))
 		writeJsonError(w, 400, err.Error())
 	} else {
-		switch ufopResultContentType {
-		case "application/json":
+		switch ufopResultType {
+		case RESULT_TYPE_JSON:
 			writeJsonResult(w, 200, ufopResult)
-		default:
-			writeOctetResultWithMime(w, 200, ufopResult, ufopResultContentType)
+		case RESULT_TYPE_OCTECT:
+			switch ufopResult.(type) {
+			case []byte:
+				writeOctetResultWithMime(w, 200, ufopResult, ufopResultContentType)
+			case string:
+				writeOctetResultWithMimeFromFile(w, 200, ufopResult, ufopResultContentType)
+			}
 		}
 	}
 }
 
-func handleJob(ufopReq UfopRequest, ufopPrefix string, jobHandlers map[string]UfopJobHandler) (interface{}, string, error) {
+func handleJob(ufopReq UfopRequest, ufopPrefix string, jobHandlers map[string]UfopJobHandler) (interface{}, int, string, error) {
 	var ufopResult interface{}
+	var resultType int
 	var contentType string
 	var err error
 	cmd := ufopReq.Cmd
@@ -112,11 +120,11 @@ func handleJob(ufopReq UfopRequest, ufopPrefix string, jobHandlers map[string]Uf
 	fop := items[0]
 	if jobHandler, ok := jobHandlers[fop]; ok {
 		ufopReq.Cmd = strings.TrimPrefix(ufopReq.Cmd, ufopPrefix)
-		ufopResult, contentType, err = jobHandler.Do(ufopReq)
+		ufopResult, resultType, contentType, err = jobHandler.Do(ufopReq)
 	} else {
 		err = errors.New("no fop available for the request")
 	}
-	return ufopResult, contentType, err
+	return ufopResult, resultType, contentType, err
 }
 
 func writeJsonError(w http.ResponseWriter, statusCode int, message string) {

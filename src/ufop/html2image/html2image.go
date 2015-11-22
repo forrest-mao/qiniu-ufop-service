@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/qiniu/log"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -73,7 +73,7 @@ func (this *Html2Imager) InitConfig(jobConf string) (err error) {
 
 func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err error) {
 	pattern := `^html2image(/croph/\d+|/cropw/\d+|/cropx/\d+|/cropy/\d+|/format/(png|jpg|jpeg)|/height/\d+|/quality/\d+|/width/\d+|/force/[0|1]){0,9}$`
-	matched, _ := regexp.Match(pattern, []byte(cmd))
+	matched, _ := regexp.MatchString(pattern, cmd)
 	if !matched {
 		err = errors.New("invalid html2image command format")
 		return
@@ -187,7 +187,13 @@ func (this *Html2Imager) parse(cmd string) (options *Html2ImageOptions, err erro
 
 }
 
-func (this *Html2Imager) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
+func (this *Html2Imager) Do(req ufop.UfopRequest) (result interface{}, resultType int, contentType string, err error) {
+	options, pErr := this.parse(req.Cmd)
+	if pErr != nil {
+		err = pErr
+		return
+	}
+
 	//if not text format, error it
 	if !strings.HasPrefix(req.Src.MimeType, "text/") {
 		err = errors.New("unsupported file mime type, only text/* allowed")
@@ -197,12 +203,6 @@ func (this *Html2Imager) Do(req ufop.UfopRequest) (result interface{}, contentTy
 	//if file size exceeds, error it
 	if req.Src.Fsize > this.maxPageSize {
 		err = errors.New("page file length exceeds the limit")
-		return
-	}
-
-	options, pErr := this.parse(req.Cmd)
-	if pErr != nil {
-		err = pErr
 		return
 	}
 
@@ -288,13 +288,11 @@ func (this *Html2Imager) Do(req ufop.UfopRequest) (result interface{}, contentTy
 	//result tmp file
 	resultTmpFname := fmt.Sprintf("%s%d.result.%s", jobPrefix, time.Now().UnixNano(), options.Format)
 	resultTmpFpath := filepath.Join(os.TempDir(), resultTmpFname)
-	defer os.Remove(resultTmpFpath)
 
 	cmdParams = append(cmdParams, localPageTmpFpath, resultTmpFpath)
 
 	//cmd
 	convertCmd := exec.Command("wkhtmltoimage", cmdParams...)
-	log.Println(convertCmd.Path, convertCmd.Args)
 
 	stdErrPipe, pipeErr := convertCmd.StderrPipe()
 	if pipeErr != nil {
@@ -310,37 +308,30 @@ func (this *Html2Imager) Do(req ufop.UfopRequest) (result interface{}, contentTy
 	stdErrData, readErr := ioutil.ReadAll(stdErrPipe)
 	if readErr != nil {
 		err = errors.New(fmt.Sprintf("read html2image command stderr error, %s", readErr.Error()))
+		defer os.Remove(resultTmpFpath)
 		return
 	}
 
 	//check stderr output & output file
 	if string(stdErrData) != "" {
-		log.Println(string(stdErrData))
+		log.Error(string(stdErrData))
 	}
 
 	if waitErr := convertCmd.Wait(); waitErr != nil {
 		err = errors.New(fmt.Sprintf("wait html2image to exit error, %s", waitErr.Error()))
+		defer os.Remove(resultTmpFpath)
 		return
 	}
 
-	if _, statErr := os.Stat(resultTmpFpath); statErr == nil {
-		oTmpFp, openErr := os.Open(resultTmpFpath)
-		if openErr != nil {
-			err = errors.New(fmt.Sprintf("open html2image output result error, %s", openErr.Error()))
-			return
-		}
-		defer oTmpFp.Close()
-
-		outputBytes, readErr := ioutil.ReadAll(oTmpFp)
-		if readErr != nil {
-			err = errors.New(fmt.Sprintf("read html2image output result error, %s", readErr.Error()))
-			return
-		}
-		result = outputBytes
-	} else {
+	if oFileInfo, statErr := os.Stat(resultTmpFpath); statErr != nil || oFileInfo.Size() == 0 {
 		err = errors.New("html2image with no valid output result")
+		defer os.Remove(resultTmpFpath)
+		return
 	}
 
+	//write result
+	result = resultTmpFpath
+	resultType = ufop.RESULT_TYPE_OCTECT
 	if options.Format == "png" {
 		contentType = "image/png"
 	} else {

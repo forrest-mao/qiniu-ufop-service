@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/qiniu/log"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -80,7 +80,7 @@ func (this *Html2Pdfer) InitConfig(jobConf string) (err error) {
 
 func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) {
 	pattern := `^html2pdf(/gray/[0|1]|/low/[0|1]|/orient/(Portrait|Landscape)|/size/[A-B][0-8]|/title/[0-9a-zA-Z-_=]+|/collate/[0|1]|/copies/\d+){0,7}$`
-	matched, _ := regexp.Match(pattern, []byte(cmd))
+	matched, _ := regexp.MatchString(pattern, cmd)
 	if !matched {
 		err = errors.New("invalid html2pdf command format")
 		return
@@ -151,7 +151,13 @@ func (this *Html2Pdfer) parse(cmd string) (options *Html2PdfOptions, err error) 
 	return
 }
 
-func (this *Html2Pdfer) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
+func (this *Html2Pdfer) Do(req ufop.UfopRequest) (result interface{}, resultType int, contentType string, err error) {
+	options, pErr := this.parse(req.Cmd)
+	if pErr != nil {
+		err = pErr
+		return
+	}
+
 	//if not text format, error it
 	if !strings.HasPrefix(req.Src.MimeType, "text/") {
 		err = errors.New("unsupported file mime type, only text/* allowed")
@@ -161,12 +167,6 @@ func (this *Html2Pdfer) Do(req ufop.UfopRequest) (result interface{}, contentTyp
 	//if file size exceeds, error it
 	if req.Src.Fsize > this.maxPageSize {
 		err = errors.New("page file length exceeds the limit")
-		return
-	}
-
-	options, pErr := this.parse(req.Cmd)
-	if pErr != nil {
-		err = pErr
 		return
 	}
 
@@ -249,13 +249,11 @@ func (this *Html2Pdfer) Do(req ufop.UfopRequest) (result interface{}, contentTyp
 	//result tmp file
 	resultTmpFname := fmt.Sprintf("%s%d.result.pdf", jobPrefix, time.Now().UnixNano())
 	resultTmpFpath := filepath.Join(os.TempDir(), resultTmpFname)
-	defer os.Remove(resultTmpFpath)
 
 	cmdParams = append(cmdParams, localPageTmpFpath, resultTmpFpath)
 
 	//cmd
 	convertCmd := exec.Command("wkhtmltopdf", cmdParams...)
-	log.Println(convertCmd.Path, convertCmd.Args)
 
 	stdErrPipe, pipeErr := convertCmd.StderrPipe()
 	if pipeErr != nil {
@@ -271,37 +269,30 @@ func (this *Html2Pdfer) Do(req ufop.UfopRequest) (result interface{}, contentTyp
 	stdErrData, readErr := ioutil.ReadAll(stdErrPipe)
 	if readErr != nil {
 		err = errors.New(fmt.Sprintf("read html2pdf command stderr error, %s", readErr.Error()))
+		defer os.Remove(resultTmpFpath)
 		return
 	}
 
 	//check stderr output & output file
 	if string(stdErrData) != "" {
-		log.Println(string(stdErrData))
+		log.Error(string(stdErrData))
 	}
 
 	if waitErr := convertCmd.Wait(); waitErr != nil {
 		err = errors.New(fmt.Sprintf("wait html2pdf to exit error, %s", waitErr.Error()))
+		defer os.Remove(resultTmpFpath)
 		return
 	}
 
-	if _, statErr := os.Stat(resultTmpFpath); statErr == nil {
-		oTmpFp, openErr := os.Open(resultTmpFpath)
-		if openErr != nil {
-			err = errors.New(fmt.Sprintf("open html2pdf output result error, %s", openErr.Error()))
-			return
-		}
-		defer oTmpFp.Close()
-
-		outputBytes, readErr := ioutil.ReadAll(oTmpFp)
-		if readErr != nil {
-			err = errors.New(fmt.Sprintf("read html2pdf output result error, %s", readErr.Error()))
-			return
-		}
-		result = outputBytes
-	} else {
+	if oFileInfo, statErr := os.Stat(resultTmpFpath); statErr != nil || oFileInfo.Size() == 0 {
 		err = errors.New("html2pdf with no valid output result")
+		defer os.Remove(resultTmpFpath)
+		return
 	}
 
+	//write result
+	result = resultTmpFpath
+	resultType = ufop.RESULT_TYPE_OCTECT
 	contentType = "application/pdf"
 	return
 }

@@ -91,7 +91,7 @@ func (this *Mkzipper) InitConfig(jobConf string) (err error) {
 
 func (this *Mkzipper) parse(cmd string) (bucket string, encoding string, zipFiles []ZipFile, err error) {
 	pattern := "^mkzip/bucket/[0-9a-zA-Z-_=]+(/encoding/[0-9a-zA-Z-_=]+){0,1}(/url/[0-9a-zA-Z-_=]+(/alias/[0-9a-zA-Z-_=]+){0,1})+$"
-	matched, _ := regexp.Match(pattern, []byte(cmd))
+	matched, _ := regexp.MatchString(pattern, cmd)
 	if !matched {
 		err = errors.New("invalid mkzip command format")
 		return
@@ -177,7 +177,7 @@ func (this *Mkzipper) parse(cmd string) (bucket string, encoding string, zipFile
 	return
 }
 
-func (this *Mkzipper) Do(req ufop.UfopRequest) (result interface{}, contentType string, err error) {
+func (this *Mkzipper) Do(req ufop.UfopRequest) (result interface{}, resultType int, contentType string, err error) {
 	//parse command
 	bucket, encoding, zipFiles, pErr := this.parse(req.Cmd)
 	if pErr != nil {
@@ -282,7 +282,10 @@ func (this *Mkzipper) Do(req ufop.UfopRequest) (result interface{}, contentType 
 		err = errors.New(fmt.Sprintf("close zip file error, %s", cErr))
 		return
 	}
+
+	//write result
 	result = zipBuffer.Bytes()
+	resultType = ufop.RESULT_TYPE_OCTECT
 	contentType = "application/zip"
 	return
 }
