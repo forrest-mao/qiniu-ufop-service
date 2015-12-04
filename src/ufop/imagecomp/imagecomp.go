@@ -550,6 +550,6 @@ func (this *ImageComposer) Do(req ufop.UfopRequest) (result interface{}, resultT
 	}
 
 	result = buffer.Bytes()
-	result = ufop.RESULT_TYPE_OCTECT
+	resultType = ufop.RESULT_TYPE_OCTECT
 	return
 }
