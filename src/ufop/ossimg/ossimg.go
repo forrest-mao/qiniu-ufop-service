@@ -514,7 +514,7 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 	//{@link http://help.aliyun.com/document_detail/oss/oss-img-guide/resize/resize-scale.html}
 	if oper.Percent > 0 {
 		width = int(float64(width) * float64(oper.Percent) / 100)
-		height = int(float64(width) * float64(oper.Percent) / 100)
+		height = int(float64(height) * float64(oper.Percent) / 100)
 	}
 
 	if width != 0 && height != 0 {
@@ -557,7 +557,9 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 			}
 		}
 	} else {
-
+		if oper.Percent > 0 {
+			qFop = fmt.Sprintf("imageMogr2/thumbnail/!%dp", oper.Percent)
+		}
 	}
 
 	if qFop == "" {
