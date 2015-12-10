@@ -525,9 +525,9 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 		} else if oper.Edge == 2 {
 			qFop = fmt.Sprintf("imageMogr2/thumbnail/%dx%d!", width, height)
 		} else if oper.Edge == 4 {
-			qFop = fmt.Sprintf("imageMogr2/thumbnail/%dx%d!", width, height)
+			qFop = fmt.Sprintf("imageMogr2/thumbnail/%dx%d/extent/%dx%d", width, height, width, height)
 			if oper.BackgroundBlue != 0 || oper.BackgroundGreen != 0 || oper.BackgroundRed != 0 {
-				background := fmt.Sprintf("#%x%x%x", oper.BackgroundBlue, oper.BackgroundGreen, oper.BackgroundRed)
+				background := fmt.Sprintf("#%02x%02x%02x", oper.BackgroundRed, oper.BackgroundGreen, oper.BackgroundBlue)
 				qFop = fmt.Sprintf("%s/background/%s", qFop, base64.URLEncoding.EncodeToString([]byte(background)))
 			}
 		}
