@@ -99,11 +99,11 @@ func (this *UfopServer) serveUfop(w http.ResponseWriter, req *http.Request) {
 		case RESULT_TYPE_JSON:
 			writeJsonResult(w, 200, ufopResult)
 		case RESULT_TYPE_OCTECT_BYTES:
-				writeOctetResultWithMime(w, ufopResult, ufopResultContentType)
+			writeOctetResultFromBytes(w, ufopResult, ufopResultContentType)
 		case RESULT_TYPE_OCTECT_FILE:
-				writeOctetResultWithMimeFromFile(w, ufopResult, ufopResultContentType)
+			writeOctetResultFromFile(w, ufopResult, ufopResultContentType)
 		case RESULT_TYPE_OCTECT_URL:
-			writeOctectResultWithMimeFromUrl(w,ufopResult)
+			writeOctectResultFromUrl(w, ufopResult)
 		}
 	}
 }
@@ -147,7 +147,7 @@ func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) 
 	}
 }
 
-func writeOctetResultWithMime(w http.ResponseWriter,result interface{}, mimeType string) {
+func writeOctetResultFromBytes(w http.ResponseWriter, result interface{}, mimeType string) {
 	if mimeType != "" {
 		w.Header().Set("Content-Type", mimeType)
 	}
@@ -159,7 +159,7 @@ func writeOctetResultWithMime(w http.ResponseWriter,result interface{}, mimeType
 	}
 }
 
-func writeOctetResultWithMimeFromFile(w http.ResponseWriter, result interface{}, mimeType string) {
+func writeOctetResultFromFile(w http.ResponseWriter, result interface{}, mimeType string) {
 	//delete the tmp file
 	var filePath string
 	if v, ok := result.(string); ok {
@@ -184,23 +184,23 @@ func writeOctetResultWithMimeFromFile(w http.ResponseWriter, result interface{},
 	}
 }
 
-func writeOctectResultWithMimeFromUrl(w http.ResponseWriter,result interface{}){
+func writeOctectResultFromUrl(w http.ResponseWriter, result interface{}) {
 	var resUrl string
-	if v,ok:=result.(string);ok{
-		resUrl=v
+	if v, ok := result.(string); ok {
+		resUrl = v
 	}
 
-	resp,respErr:=http.Get(resUrl)
-	if respErr!=nil{
-		log.Error("get remote resource error",respErr)
+	resp, respErr := http.Get(resUrl)
+	if respErr != nil {
+		log.Error("get remote resource error", respErr)
 		return
 	}
 	defer resp.Body.Close()
 
-	if resp.Header.Get("Content-Type")!=""{
-		w.Header().Set("Content-Type",resp.Header.Get("Content-Type"))
+	if resp.Header.Get("Content-Type") != "" {
+		w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
 	}
-	_,cpErr:=io.Copy(w,resp.Body)
+	_, cpErr := io.Copy(w, resp.Body)
 	if cpErr != nil {
 		log.Error("write octect from remote resource error", cpErr)
 		return
