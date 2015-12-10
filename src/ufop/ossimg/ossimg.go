@@ -67,7 +67,7 @@ const (
 	BACKGROUND_PATTERN      = `\d+\-\d+\-\d+bgc_{0,1}`
 	CROP_PATTERN            = `(0|1)c_{0,1}`
 	CROP_BY_GRAVITY_PATTERN = `(\d+){0,1}x(\d+){0,1}\-(1|2|3|4|5|6|7|8|9)rc_{0,1}`
-	ROTATE_PATTERN          = `\d+r_{0,1}`
+	ROTATE_PATTERN          = `\d+r[^c]_{0,1}`
 	AUTO_ORIENT_PATTERN     = `(0|1|2)o_{0,1}`
 	INTERLACE_PATTERN       = `(0|1)pr_{0,1}`
 	SHARPEN_PATTERN         = `\d+sh_{0,1}`
@@ -289,6 +289,10 @@ func (this *OSSImager) parseImageOperation(oper string) (operation OSSImageOpera
 		Name: OSS_OPER_IMAGE,
 	}
 
+	if strings.HasSuffix(oper, "r") {
+		oper += ".jpg"
+	}
+
 	//parse
 	width := this.scanImageParamInt(oper, "w", WIDTH_PATTERN)
 	operation.Width = width
@@ -351,7 +355,7 @@ func (this *OSSImager) parseImageOperation(oper string) (operation OSSImageOpera
 		operation.CropByPosHeight = cropHeight
 	}
 
-	rotate := this.scanImageParamInt(oper, "r", ROTATE_PATTERN)
+	rotate := this.scanImageParamInt(oper, "r.", ROTATE_PATTERN)
 	operation.Rotate = rotate
 
 	orient := this.scanImageParamInt(oper, "o", AUTO_ORIENT_PATTERN)
@@ -510,6 +514,25 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 	width := oper.Width
 	height := oper.Height
 
+	//check crop by gravity
+	//{@link http://helpcdn.aliyun.com/document_detail/oss/oss-img-guide/crop/area-crop.html}
+	var qCropFop string
+
+	if oper.CropByPosGravity != 0 {
+		var cropx string
+		var cropy string
+		if oper.CropByPosWidth != 0 {
+			cropx = fmt.Sprintf("%d", oper.CropByPosWidth)
+		}
+		if oper.CropByPosHeight != 0 {
+			cropy = fmt.Sprintf("%d", oper.CropByPosHeight)
+		}
+
+		if cropx != "" && cropy != "" {
+			qCropFop = fmt.Sprintf("imageMogr2/crop/%sx%s", cropx, cropy)
+		}
+	}
+
 	//check percent
 	//{@link http://help.aliyun.com/document_detail/oss/oss-img-guide/resize/resize-scale.html}
 	if oper.Percent > 0 {
@@ -560,6 +583,10 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 		if oper.Percent > 0 {
 			qFop = fmt.Sprintf("imageMogr2/thumbnail/!%dp", oper.Percent)
 		}
+	}
+
+	if qCropFop != "" {
+		qFop = fmt.Sprintf("%s|%s", qCropFop, qFop)
 	}
 
 	if qFop == "" {
