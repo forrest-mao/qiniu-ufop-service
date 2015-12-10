@@ -292,7 +292,7 @@ func (this *Html2Pdfer) Do(req ufop.UfopRequest) (result interface{}, resultType
 
 	//write result
 	result = resultTmpFpath
-	resultType = ufop.RESULT_TYPE_OCTECT
+	resultType = ufop.RESULT_TYPE_OCTECT_FILE
 	contentType = "application/pdf"
 	return
 }

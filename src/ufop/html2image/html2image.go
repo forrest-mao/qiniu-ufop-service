@@ -331,7 +331,7 @@ func (this *Html2Imager) Do(req ufop.UfopRequest) (result interface{}, resultTyp
 
 	//write result
 	result = resultTmpFpath
-	resultType = ufop.RESULT_TYPE_OCTECT
+	resultType = ufop.RESULT_TYPE_OCTECT_FILE
 	if options.Format == "png" {
 		contentType = "image/png"
 	} else {

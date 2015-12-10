@@ -212,7 +212,7 @@ func (this *RoundPicer) Do(req ufop.UfopRequest) (result interface{}, resultType
 
 	//write result
 	result = oTmpFpath
-	resultType = ufop.RESULT_TYPE_OCTECT
+	resultType = ufop.RESULT_TYPE_OCTECT_FILE
 	contentType = "image/png"
 
 	return

@@ -275,7 +275,7 @@ func (this *AudioMerger) Do(req ufop.UfopRequest) (result interface{}, resultTyp
 
 	//write result
 	result = oTmpFname
-	resultType = ufop.RESULT_TYPE_OCTECT
+	resultType = ufop.RESULT_TYPE_OCTECT_FILE
 	contentType = dstMime
 
 	return

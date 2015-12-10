@@ -33,7 +33,7 @@ func (this *UfopServer) RegisterJobHandler(jobConf string, jobHandler interface{
 			return
 		}
 
-		this.jobHandlers[this.cfg.UfopPrefix + h.Name()] = h
+		this.jobHandlers[this.cfg.UfopPrefix+h.Name()] = h
 	} else {
 		err = errors.New(fmt.Sprintf("job handler of [%s] must implement interface UfopJobHandler", jobConf))
 	}
@@ -98,13 +98,12 @@ func (this *UfopServer) serveUfop(w http.ResponseWriter, req *http.Request) {
 		switch ufopResultType {
 		case RESULT_TYPE_JSON:
 			writeJsonResult(w, 200, ufopResult)
-		case RESULT_TYPE_OCTECT:
-			switch ufopResult.(type) {
-			case []byte:
-				writeOctetResultWithMime(w, 200, ufopResult, ufopResultContentType)
-			case string:
-				writeOctetResultWithMimeFromFile(w, 200, ufopResult, ufopResultContentType)
-			}
+		case RESULT_TYPE_OCTECT_BYTES:
+				writeOctetResultWithMime(w, ufopResult, ufopResultContentType)
+		case RESULT_TYPE_OCTECT_FILE:
+				writeOctetResultWithMimeFromFile(w, ufopResult, ufopResultContentType)
+		case RESULT_TYPE_OCTECT_URL:
+			writeOctectResultWithMimeFromUrl(w,ufopResult)
 		}
 	}
 }
@@ -148,19 +147,19 @@ func writeJsonResult(w http.ResponseWriter, statusCode int, result interface{}) 
 	}
 }
 
-func writeOctetResultWithMime(w http.ResponseWriter, statusCode int, result interface{}, mimeType string) {
+func writeOctetResultWithMime(w http.ResponseWriter,result interface{}, mimeType string) {
 	if mimeType != "" {
 		w.Header().Set("Content-Type", mimeType)
 	}
 	if respData := result.([]byte); respData != nil {
 		_, err := w.Write(respData)
 		if err != nil {
-			log.Error("write octect response error", err)
+			log.Error("write octect from bytes error", err)
 		}
 	}
 }
 
-func writeOctetResultWithMimeFromFile(w http.ResponseWriter, statusCode int, result interface{}, mimeType string) {
+func writeOctetResultWithMimeFromFile(w http.ResponseWriter, result interface{}, mimeType string) {
 	//delete the tmp file
 	var filePath string
 	if v, ok := result.(string); ok {
@@ -174,13 +173,36 @@ func writeOctetResultWithMimeFromFile(w http.ResponseWriter, statusCode int, res
 	//output result
 	resultFp, openErr := os.Open(filePath)
 	if openErr != nil {
-		log.Error("open result file error", openErr)
+		log.Error("open result local file error", openErr)
 		return
 	}
 	defer resultFp.Close()
 	_, cpErr := io.Copy(w, resultFp)
 	if cpErr != nil {
-		log.Error("output result content error", cpErr)
+		log.Error("write octect from local file error", cpErr)
+		return
+	}
+}
+
+func writeOctectResultWithMimeFromUrl(w http.ResponseWriter,result interface{}){
+	var resUrl string
+	if v,ok:=result.(string);ok{
+		resUrl=v
+	}
+
+	resp,respErr:=http.Get(resUrl)
+	if respErr!=nil{
+		log.Error("get remote resource error",respErr)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.Header.Get("Content-Type")!=""{
+		w.Header().Set("Content-Type",resp.Header.Get("Content-Type"))
+	}
+	_,cpErr:=io.Copy(w,resp.Body)
+	if cpErr != nil {
+		log.Error("write octect from remote resource error", cpErr)
 		return
 	}
 }
