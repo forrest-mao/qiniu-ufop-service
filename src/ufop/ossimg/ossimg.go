@@ -93,6 +93,7 @@ type OSSImager struct {
 	srcDomain string
 	cdnDomain string
 	path      string
+	srcFormat string
 }
 
 type OSSImageConfig struct {
@@ -198,8 +199,9 @@ type OSSImageOperation struct {
 }
 
 type ImageInfo struct {
-	Width  int `json:"width"`
-	Height int `json:"height"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Format string `json:"format"`
 }
 
 func (this *OSSImager) Name() string {
@@ -573,6 +575,8 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 		return
 	}
 
+	this.srcFormat = imageInfo.Format
+
 	width := oper.Width
 	height := oper.Height
 
@@ -685,7 +689,9 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 	}
 
 	if oper.DestFormat == "" {
-		qFop = fmt.Sprintf("%s/format/jpg", qFop)
+		if this.srcFormat != "png" {
+			qFop = fmt.Sprintf("%s/format/jpg", qFop)
+		}
 	} else if oper.DestFormat != "src" {
 		qFop = fmt.Sprintf("%s/format/%s", qFop, oper.DestFormat)
 	}
