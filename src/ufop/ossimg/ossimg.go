@@ -44,7 +44,7 @@ const (
 	OSS_WM_MIX   = 3
 )
 
-var OSS_QINIU_WM_GRAVITY = map[int]string{
+var OSS_QINIU_GRAVITY = map[int]string{
 	1: "NorthWest",
 	2: "North",
 	3: "NorthEast",
@@ -58,21 +58,22 @@ var OSS_QINIU_WM_GRAVITY = map[int]string{
 
 //image basic operation
 const (
-	WIDTH_PATTERN           = `\d+w_{0,1}`
-	HEIGHT_PATTERN          = `\d+h_{0,1}`
-	LARGE_PATTERN           = `(0|1)l_{0,1}`
-	QUALITY_PATTERN         = `\d+(q|Q)_{0,1}`
-	EDGE_PATTERN            = `(0|1|2|4)e_{0,1}`
-	PERCENT_PATTERN         = `\d+p_{0,1}`
-	BACKGROUND_PATTERN      = `\d+\-\d+\-\d+bgc_{0,1}`
-	CROP_PATTERN            = `(0|1)c_{0,1}`
-	CROP_BY_GRAVITY_PATTERN = `(\d+){0,1}x(\d+){0,1}\-(1|2|3|4|5|6|7|8|9)rc_{0,1}`
-	ROTATE_PATTERN          = `\d+r[^c]_{0,1}`
-	AUTO_ORIENT_PATTERN     = `(0|1|2)o_{0,1}`
-	INTERLACE_PATTERN       = `(0|1)pr_{0,1}`
-	SHARPEN_PATTERN         = `\d+sh_{0,1}`
-	BLUR_PATTERN            = `\d+\-\d+bl_{0,1}`
-	DEST_FORMAT_PATTERN     = `\.(jpg|png|webp|bmp|jpeg|src)`
+	WIDTH_PATTERN              = `\d+w_{0,1}`
+	HEIGHT_PATTERN             = `\d+h_{0,1}`
+	LARGE_PATTERN              = `(0|1)l_{0,1}`
+	QUALITY_PATTERN            = `\d+(q|Q)_{0,1}`
+	EDGE_PATTERN               = `(0|1|2|4)e_{0,1}`
+	PERCENT_PATTERN            = `\d+p_{0,1}`
+	BACKGROUND_PATTERN         = `\d+\-\d+\-\d+bgc_{0,1}`
+	AUTO_CROP_PATTERN          = `(0|1)c_{0,1}`
+	AUTO_CROP_POSITION_PATTERN = `\d+\-\d+\-\d+\-\d+a`
+	CROP_BY_GRAVITY_PATTERN    = `(\d+){0,1}x(\d+){0,1}\-(1|2|3|4|5|6|7|8|9)rc_{0,1}`
+	ROTATE_PATTERN             = `\d+r[^c]_{0,1}`
+	AUTO_ORIENT_PATTERN        = `(0|1|2)o_{0,1}`
+	INTERLACE_PATTERN          = `(0|1)pr_{0,1}`
+	SHARPEN_PATTERN            = `\d+sh_{0,1}`
+	BLUR_PATTERN               = `\d+\-\d+bl_{0,1}`
+	DEST_FORMAT_PATTERN        = `\.(jpg|png|webp|bmp|jpeg|src)`
 )
 
 type OSSImager struct {
@@ -110,7 +111,11 @@ type OSSImageOperation struct {
 	Percent int
 
 	//c, crop
-	Crop int
+	AutoCrop        int
+	AutoCropOffsetX int
+	AutoCropOffsetY int
+	AutoCropWidth   int
+	AutoCropHeight  int
 
 	//r, rotate [0,360]
 	Rotate int
@@ -320,8 +325,22 @@ func (this *OSSImager) parseImageOperation(oper string) (operation OSSImageOpera
 		operation.BackgroundBlue = blue
 	}
 
-	crop := this.scanImageParamInt(oper, "c", CROP_PATTERN)
-	operation.Crop = crop
+	crop := this.scanImageParamInt(oper, "c", AUTO_CROP_PATTERN)
+	operation.AutoCrop = crop
+
+	cropPos := this.scanImageParam(oper, "a", AUTO_CROP_POSITION_PATTERN)
+	if cropPos != "" {
+		items := strings.Split(cropPos, "-")
+		cropOffsetX, _ := strconv.Atoi(items[0])
+		cropOffsetY, _ := strconv.Atoi(items[1])
+		cropWidth, _ := strconv.Atoi(items[2])
+		cropHeight, _ := strconv.Atoi(items[3])
+
+		operation.AutoCropOffsetX = cropOffsetX
+		operation.AutoCropOffsetY = cropOffsetY
+		operation.AutoCropWidth = cropWidth
+		operation.AutoCropHeight = cropHeight
+	}
 
 	quality := this.scanImageParamInt(oper, "qQ", QUALITY_PATTERN)
 	qLIndex := strings.LastIndex(oper, "q")
@@ -382,7 +401,7 @@ func (this *OSSImager) parseImageOperation(oper string) (operation OSSImageOpera
 
 	//fix the default values according to the ali oss image operation doc
 	//{@link http://help.aliyun.com/document_detail/oss/oss-img-guide/crop/auto-crop.html}
-	if operation.Crop == 1 && !strings.Contains(oper, "e") {
+	if operation.AutoCrop == 1 && !strings.Contains(oper, "e") {
 		operation.Edge = 1
 	}
 	return
@@ -529,7 +548,7 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 		}
 
 		if cropx != "" && cropy != "" {
-			qCropFop = fmt.Sprintf("imageMogr2/crop/%sx%s", cropx, cropy)
+			qCropFop = fmt.Sprintf("imageMogr2/gravity/%s/crop/%sx%s", OSS_QINIU_GRAVITY[oper.CropByPosGravity], cropx, cropy)
 		}
 	}
 
@@ -555,7 +574,7 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 			}
 		}
 
-		if oper.Crop == 1 {
+		if oper.AutoCrop == 1 {
 			qFop = fmt.Sprintf("%s/gravity/Center/crop/%dx%d", qFop, width, height)
 		}
 
@@ -641,6 +660,18 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 
 	if qFop == "imageMogr2" {
 		qFop = ""
+	}
+
+	//check auto crop
+	if oper.AutoCropWidth != 0 && oper.AutoCropHeight != 0 {
+		qCropFop = fmt.Sprintf("imageMogr2/crop/!%dx%da%da%d", oper.AutoCropWidth, oper.AutoCropHeight,
+			oper.AutoCropOffsetX, oper.AutoCropOffsetY)
+
+		if qFop == "" {
+			qFop = qCropFop
+		} else {
+			qFop = fmt.Sprintf("%s|%s", qFop, qCropFop)
+		}
 	}
 
 	return
