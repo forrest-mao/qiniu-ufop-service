@@ -45,6 +45,8 @@ const (
 	OSS_WM_MIX   = 3
 )
 
+const FONT_SIZE_FACTOR = 20
+
 var OSS_QINIU_GRAVITY = map[int]string{
 	1: "NorthWest",
 	2: "North",
@@ -55,6 +57,16 @@ var OSS_QINIU_GRAVITY = map[int]string{
 	7: "SouthWest",
 	8: "South",
 	9: "SouthEast",
+}
+
+var OSS_QINIU_FONT = map[string]string{
+	"wqy-zenhei":        "微软雅黑",
+	"wqy-microhei":      "黑体",
+	"fangzhengshusong":  "宋体",
+	"fangzhengkaiti":    "楷体",
+	"fangzhengheiti":    "黑体",
+	"fangzhengfangsong": "仿宋",
+	"droidsansfallback": "微软雅黑",
 }
 
 //image basic operation
@@ -180,6 +192,9 @@ type OSSImageOperation struct {
 	WMOffsetX int
 	//y, offset y
 	WMOffsetY int
+
+	//voffset
+	WMVOffset int
 }
 
 type ImageInfo struct {
@@ -479,7 +494,21 @@ func (this *OSSImager) parseWatermarkOperation(oper string) (operation OSSImageO
 	operation.WMOffsetX = this.wmInt(params["x"])
 	//offsetY
 	operation.WMOffsetY = this.wmInt(params["y"])
+	//voffset
+	operation.WMVOffset = this.wmInt(params["voffset"])
 
+	//fix offset
+	//{@link http://help.aliyun.com/document_detail/oss/oss-img-guide/watermark/basic-parameters.html}
+	if _, ok := params["size"]; !ok {
+		operation.WMFontSize = 40
+	}
+	if _, ok := params["x"]; !ok {
+		operation.WMOffsetX = 10
+	}
+
+	if _, ok := params["y"]; !ok {
+		operation.WMOffsetY = 10
+	}
 	return
 }
 
@@ -722,11 +751,13 @@ func (this *OSSImager) formatQiniuWatermarkFop(oper OSSImageOperation) (qFop str
 		}
 
 		if oper.WMFontType != "" {
-			qFop = fmt.Sprintf("%s/font/%s", qFop, base64.URLEncoding.EncodeToString([]byte(oper.WMFontType)))
+			if font, ok := OSS_QINIU_FONT[oper.WMFontType]; ok {
+				qFop = fmt.Sprintf("%s/font/%s", qFop, base64.URLEncoding.EncodeToString([]byte(font)))
+			}
 		}
 
 		if oper.WMFontSize != 0 {
-			qFop = fmt.Sprintf("%s/fontsize/%d", qFop, oper.WMFontSize)
+			qFop = fmt.Sprintf("%s/fontsize/%d", qFop, oper.WMFontSize*FONT_SIZE_FACTOR)
 		}
 
 		if oper.WMFontColor != "" {
@@ -747,9 +778,16 @@ func (this *OSSImager) formatQiniuWatermarkFop(oper OSSImageOperation) (qFop str
 			qFop = fmt.Sprintf("%s/dx/%d", qFop, oper.WMOffsetX)
 		}
 
-		if oper.WMOffsetY != 0 {
-			qFop = fmt.Sprintf("%s/dy/%d", qFop, oper.WMOffsetY)
+		if oper.WMGravity == 4 || oper.WMGravity == 5 || oper.WMGravity == 6 {
+			if oper.WMVOffset != 0 {
+				qFop = fmt.Sprintf("%s/dy/%d", qFop, oper.WMVOffset*(-1))
+			}
+		} else {
+			if oper.WMOffsetY != 0 {
+				qFop = fmt.Sprintf("%s/dy/%d", qFop, oper.WMOffsetY)
+			}
 		}
+
 	}
 
 	if oper.WMType == OSS_WM_IMAGE || oper.WMType == OSS_WM_MIX {
@@ -772,8 +810,14 @@ func (this *OSSImager) formatQiniuWatermarkFop(oper OSSImageOperation) (qFop str
 			qFop = fmt.Sprintf("%s/dx/%d", qFop, oper.WMOffsetX)
 		}
 
-		if oper.WMOffsetY != 0 {
-			qFop = fmt.Sprintf("%s/dy/%d", qFop, oper.WMOffsetY)
+		if oper.WMGravity == 4 || oper.WMGravity == 5 || oper.WMGravity == 6 {
+			if oper.WMVOffset != 0 {
+				qFop = fmt.Sprintf("%s/dy/%d", qFop, oper.WMVOffset*(-1))
+			}
+		} else {
+			if oper.WMOffsetY != 0 {
+				qFop = fmt.Sprintf("%s/dy/%d", qFop, oper.WMOffsetY)
+			}
 		}
 	}
 
