@@ -32,6 +32,7 @@ basic image operation
 2. order, image text order
 3. align, image text align
 4. interval, image text interval
+5. text background transparency
 */
 
 //convert all the oss image operation to qiniu style
@@ -77,12 +78,14 @@ const (
 )
 
 type OSSImager struct {
-	domain string
-	path   string
+	srcDomain string
+	cdnDomain string
+	path      string
 }
 
 type OSSImageConfig struct {
-	Domain string `json:"domain"`
+	SrcDomain string `json:"src_domain"`
+	CdnDomain string `json:"cdn_domain"`
 }
 
 type OSSImageOperation struct {
@@ -155,8 +158,6 @@ type OSSImageOperation struct {
 
 	//text, watermark text
 	WMText string
-	//s, text background transparency
-	WMTextDissolve int
 	//type, font type
 	WMFontType string
 
@@ -205,7 +206,18 @@ func (this *OSSImager) InitConfig(jobConf string) (err error) {
 		return
 	}
 
-	this.domain = config.Domain
+	this.srcDomain = config.SrcDomain
+	this.cdnDomain = config.CdnDomain
+
+	if this.srcDomain == "" {
+		err = errors.New("src domain not specified error")
+		return
+	}
+
+	if this.cdnDomain == "" {
+		err = errors.New("cdn domain not specified error")
+		return
+	}
 
 	return
 }
@@ -247,7 +259,7 @@ func (this *OSSImager) Do(req ufop.UfopRequest) (result interface{}, resultType 
 		return
 	}
 
-	srcUrl := fmt.Sprintf("%s%s", this.domain, this.path)
+	srcUrl := fmt.Sprintf("%s%s", this.srcDomain, this.path)
 	qiniuUrl := srcUrl
 
 	for _, oper := range operations {
@@ -437,7 +449,9 @@ func (this *OSSImager) parseWatermarkOperation(oper string) (operation OSSImageO
 		}
 	}
 
-	operation = OSSImageOperation{}
+	operation = OSSImageOperation{
+		Name: OSS_OPER_WATERMARK,
+	}
 	operation.WMType = this.wmInt(params["watermark"])
 
 	//wmText
@@ -522,7 +536,7 @@ func (this *OSSImager) getImageInfo(imageUrl string) (imageInfo *ImageInfo, err 
 }
 
 func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string) {
-	srcUrl := fmt.Sprintf("%s%s", this.domain, this.path)
+	srcUrl := fmt.Sprintf("%s%s", this.srcDomain, this.path)
 
 	imageInfo, gErr := this.getImageInfo(srcUrl)
 	if gErr != nil {
@@ -548,7 +562,9 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 		}
 
 		if cropx != "" && cropy != "" {
-			qCropByGravityFop = fmt.Sprintf("imageMogr2/gravity/%s/crop/%sx%s", OSS_QINIU_GRAVITY[oper.CropByPosGravity], cropx, cropy)
+			if gravity, ok := OSS_QINIU_GRAVITY[oper.CropByPosGravity]; ok {
+				qCropByGravityFop = fmt.Sprintf("imageMogr2/gravity/%s/crop/%sx%s", gravity, cropx, cropy)
+			}
 		}
 	}
 
@@ -661,10 +677,16 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 		}
 	}
 
+	if qFop == "imageMogr2" {
+		qFop = ""
+	}
+
+	//add crop check
 	var qCropFop string
 	if qCropByPosFop != "" {
 		qCropFop = qCropByPosFop
 	}
+
 	if qCropByGravityFop != "" {
 		if qCropFop != "" {
 			qCropFop = fmt.Sprintf("%s|%s", qCropFop, qCropByGravityFop)
@@ -674,16 +696,86 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 	}
 
 	if qCropFop != "" {
-		qFop = fmt.Sprintf("%s|%s",  qCropFop,qFop)
-	}
-
-	if qFop == "imageMogr2" {
-		qFop = ""
+		if qFop != "" {
+			qFop = fmt.Sprintf("%s|%s", qCropFop, qFop)
+		} else {
+			qFop = qCropFop
+		}
 	}
 
 	return
 }
 
 func (this *OSSImager) formatQiniuWatermarkFop(oper OSSImageOperation) (qFop string) {
+	switch oper.WMType {
+	case OSS_WM_IMAGE:
+		qFop = "watermark/1"
+	case OSS_WM_TEXT:
+		qFop = "watermark/2"
+	case OSS_WM_MIX:
+		qFop = "watermark/3"
+	}
+
+	if oper.WMType == OSS_WM_TEXT || oper.WMType == OSS_WM_MIX {
+		if oper.WMText != "" {
+			qFop = fmt.Sprintf("%s/text/%s", qFop, base64.URLEncoding.EncodeToString([]byte(oper.WMText)))
+		}
+
+		if oper.WMFontType != "" {
+			qFop = fmt.Sprintf("%s/font/%s", qFop, base64.URLEncoding.EncodeToString([]byte(oper.WMFontType)))
+		}
+
+		if oper.WMFontSize != 0 {
+			qFop = fmt.Sprintf("%s/fontsize/%d", qFop, oper.WMFontSize)
+		}
+
+		if oper.WMFontColor != "" {
+			qFop = fmt.Sprintf("%s/fill/%s", qFop, base64.URLEncoding.EncodeToString([]byte(oper.WMFontColor)))
+		}
+
+		if oper.WMDissolve != 0 {
+			qFop = fmt.Sprintf("%s/dissolve/%d", qFop, oper.WMDissolve)
+		}
+
+		if oper.WMGravity != 0 {
+			if gravity, ok := OSS_QINIU_GRAVITY[oper.WMGravity]; ok {
+				qFop = fmt.Sprintf("%s/gravity/%s", qFop, gravity)
+			}
+		}
+
+		if oper.WMOffsetX != 0 {
+			qFop = fmt.Sprintf("%s/dx/%d", qFop, oper.WMOffsetX)
+		}
+
+		if oper.WMOffsetY != 0 {
+			qFop = fmt.Sprintf("%s/dy/%d", qFop, oper.WMOffsetY)
+		}
+	}
+
+	if oper.WMType == OSS_WM_IMAGE || oper.WMType == OSS_WM_MIX {
+		if oper.WMImage != "" {
+			wmImageUrl := fmt.Sprintf("%s/%s", this.cdnDomain, oper.WMImage)
+			qFop = fmt.Sprintf("%s/image/%s", qFop, base64.URLEncoding.EncodeToString([]byte(wmImageUrl)))
+		}
+
+		if oper.WMDissolve != 0 {
+			qFop = fmt.Sprintf("%s/dissolve/%d", qFop, oper.WMDissolve)
+		}
+
+		if oper.WMGravity != 0 {
+			if gravity, ok := OSS_QINIU_GRAVITY[oper.WMGravity]; ok {
+				qFop = fmt.Sprintf("%s/gravity/%s", qFop, gravity)
+			}
+		}
+
+		if oper.WMOffsetX != 0 {
+			qFop = fmt.Sprintf("%s/dx/%d", qFop, oper.WMOffsetX)
+		}
+
+		if oper.WMOffsetY != 0 {
+			qFop = fmt.Sprintf("%s/dy/%d", qFop, oper.WMOffsetY)
+		}
+	}
+
 	return
 }
