@@ -535,7 +535,7 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 
 	//check crop by gravity
 	//{@link http://helpcdn.aliyun.com/document_detail/oss/oss-img-guide/crop/area-crop.html}
-	var qCropFop string
+	var qCropByGravityFop string
 
 	if oper.CropByPosGravity != 0 {
 		var cropx string
@@ -548,8 +548,15 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 		}
 
 		if cropx != "" && cropy != "" {
-			qCropFop = fmt.Sprintf("imageMogr2/gravity/%s/crop/%sx%s", OSS_QINIU_GRAVITY[oper.CropByPosGravity], cropx, cropy)
+			qCropByGravityFop = fmt.Sprintf("imageMogr2/gravity/%s/crop/%sx%s", OSS_QINIU_GRAVITY[oper.CropByPosGravity], cropx, cropy)
 		}
+	}
+
+	var qCropByPosFop string
+	//check auto crop by position
+	if oper.AutoCropWidth != 0 && oper.AutoCropHeight != 0 {
+		qCropByPosFop = fmt.Sprintf("imageMogr2/crop/!%dx%da%da%d", oper.AutoCropWidth, oper.AutoCropHeight,
+			oper.AutoCropOffsetX, oper.AutoCropOffsetY)
 	}
 
 	//check percent
@@ -604,10 +611,6 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 		}
 	}
 
-	if qCropFop != "" {
-		qFop = fmt.Sprintf("%s|%s", qCropFop, qFop)
-	}
-
 	if qFop == "" {
 		qFop = "imageMogr2"
 	}
@@ -658,20 +661,24 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 		}
 	}
 
-	if qFop == "imageMogr2" {
-		qFop = ""
+	var qCropFop string
+	if qCropByPosFop != "" {
+		qCropFop = qCropByPosFop
+	}
+	if qCropByGravityFop != "" {
+		if qCropFop != "" {
+			qCropFop = fmt.Sprintf("%s|%s", qCropFop, qCropByGravityFop)
+		} else {
+			qCropFop = qCropByGravityFop
+		}
 	}
 
-	//check auto crop
-	if oper.AutoCropWidth != 0 && oper.AutoCropHeight != 0 {
-		qCropFop = fmt.Sprintf("imageMogr2/crop/!%dx%da%da%d", oper.AutoCropWidth, oper.AutoCropHeight,
-			oper.AutoCropOffsetX, oper.AutoCropOffsetY)
+	if qCropFop != "" {
+		qFop = fmt.Sprintf("%s|%s",  qCropFop,qFop)
+	}
 
-		if qFop == "" {
-			qFop = qCropFop
-		} else {
-			qFop = fmt.Sprintf("%s|%s", qFop, qCropFop)
-		}
+	if qFop == "imageMogr2" {
+		qFop = ""
 	}
 
 	return
