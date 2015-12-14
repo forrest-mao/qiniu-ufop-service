@@ -28,11 +28,10 @@ basic image operation
 6. crop by absolute position
 
 //watermark operation
-1. voffset, watermark middle offset
-2. order, image text order
-3. align, image text align
-4. interval, image text interval
-5. text background transparency
+1. order, image text order
+2. align, image text align
+3. interval, image text interval
+4. text background transparency
 */
 
 //convert all the oss image operation to qiniu style
@@ -76,6 +75,7 @@ const (
 	LARGE_PATTERN              = `(0|1)l_{0,1}`
 	QUALITY_PATTERN            = `\d+(q|Q)_{0,1}`
 	EDGE_PATTERN               = `(0|1|2|4)e_{0,1}`
+	EXTEND_PATTERN             = `\d+x_{0,1}`
 	PERCENT_PATTERN            = `\d+p_{0,1}`
 	BACKGROUND_PATTERN         = `\d+\-\d+\-\d+bgc_{0,1}`
 	AUTO_CROP_PATTERN          = `(0|1)c_{0,1}`
@@ -125,6 +125,9 @@ type OSSImageOperation struct {
 
 	//p, 100% is the original size
 	Percent int
+
+	//x ,extend the image by times
+	Extend int
 
 	//c, crop
 	AutoCrop        int
@@ -342,6 +345,9 @@ func (this *OSSImager) parseImageOperation(oper string) (operation OSSImageOpera
 
 	percent := this.scanImageParamInt(oper, "p", PERCENT_PATTERN)
 	operation.Percent = percent
+
+	extend := this.scanImageParamInt(oper, "x", EXTEND_PATTERN)
+	operation.Extend = extend
 
 	background := this.scanImageParam(oper, "bgc", BACKGROUND_PATTERN)
 	if background != "" {
@@ -613,6 +619,12 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation) (qFop string)
 	if oper.Percent > 0 {
 		width = int(float64(width) * float64(oper.Percent) / 100)
 		height = int(float64(height) * float64(oper.Percent) / 100)
+	}
+
+	if oper.Extend > 0 {
+		//backward compatibility for x
+		width = width * oper.Extend
+		height = height * oper.Extend
 	}
 
 	if width != 0 && height != 0 {
