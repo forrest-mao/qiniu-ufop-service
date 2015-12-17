@@ -90,13 +90,20 @@ const (
 )
 
 type OSSImager struct {
-	srcDomain string
-	cdnDomain string
+	//bucket -> domain
+	domainMapping map[string]OSSImageDomain
+	bucket string
+	//url path
 	path      string
+	//src format
 	srcFormat string
 }
 
 type OSSImageConfig struct {
+	Mapping map[string]OSSImageDomain
+}
+
+type OSSImageDomain struct{
 	SrcDomain string `json:"src_domain"`
 	CdnDomain string `json:"cdn_domain"`
 }
@@ -226,36 +233,26 @@ func (this *OSSImager) InitConfig(jobConf string) (err error) {
 		return
 	}
 
-	this.srcDomain = config.SrcDomain
-	this.cdnDomain = config.CdnDomain
-
-	if this.srcDomain == "" {
-		err = errors.New("src domain not specified error")
-		return
-	}
-
-	if this.cdnDomain == "" {
-		err = errors.New("cdn domain not specified error")
-		return
-	}
+	this.domainMapping=config.Mapping
 
 	return
 }
 
 /**
-ossimg/2015/10/20/test.jpg@120w_120h_80q_1l_1c.src
+ossimg/if-pri@2015/10/20/test.jpg@120w_120h_80q_1l_1c.src
 */
 func (this *OSSImager) parse(cmd string, operations *[]OSSImageOperation) (err error) {
-	cmdParam := strings.TrimPrefix(cmd, this.Name())
+	cmdParam := strings.TrimPrefix(strings.TrimPrefix(cmd, this.Name()),"/")
 	items := strings.Split(cmdParam, "@")
-	if len(items) < 1 {
+	if len(items) < 2 {
 		err = errors.New("invalid rewrite url")
 		return
 	}
 
-	this.path = items[0]
+	this.bucket=items[0]
+	this.path = fmt.Sprintf("/%s",items[1])
 
-	operStrItems := items[1:]
+	operStrItems := items[2:]
 	for _, operStr := range operStrItems {
 		if strings.HasPrefix(operStr, "watermark") {
 			//watermark operation
@@ -279,7 +276,14 @@ func (this *OSSImager) Do(req ufop.UfopRequest) (result interface{}, resultType 
 		return
 	}
 
-	srcUrl := fmt.Sprintf("%s%s", this.srcDomain, this.path)
+	var srcDomain string
+	if v,ok:=this.domainMapping[this.bucket];!ok{
+		err=errors.New("invalid bucket specified")
+		return
+	}else{
+		srcDomain=v
+	}
+	srcUrl := fmt.Sprintf("%s%s", srcDomain, this.path)
 	qiniuUrl := srcUrl
 
 	for _, oper := range operations {
