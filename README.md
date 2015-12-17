@@ -51,6 +51,8 @@
 |amerge|实现了两个音频文件的混音功能。|[详细](docs/amerge.md)|
 |html2pdf|实现html文档到pdf的转换功能|[详细](docs/html2pdf.md)|
 |html2image|实现html文档到image的转换功能|[详细](docs/html2image.md)|
+|imagecomp|实现了图片按照九宫格的方式进行拼接的功能|[详细](docs/imagecomp.md)|
+|roundpic|实现了图片的圆角处理功能|[详细](docs/roundpic.md)|
 
 
 **PS: 以上功能的所有参考配置都在[deploy](deploy/)目录下面，可以参照文档和参考配置来使用。**
