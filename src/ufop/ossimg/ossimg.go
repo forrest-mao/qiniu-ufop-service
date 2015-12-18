@@ -100,7 +100,7 @@ type OSSImager struct {
 }
 
 type OSSImageConfig struct {
-	Mapping map[string]OSSImageDomain
+	Mapping map[string]OSSImageDomain `json:"mapping"`
 }
 
 type OSSImageDomain struct {
@@ -239,7 +239,7 @@ func (this *OSSImager) InitConfig(jobConf string) (err error) {
 }
 
 /**
-ossimg/if-pri@2015/10/20/test.jpg@120w_120h_80q_1l_1c.src
+juju-ossimg/jujucommentpic@4.png@960w_90Q_1l.jpg
 */
 func (this *OSSImager) parse(cmd string, operations *[]OSSImageOperation) (err error) {
 	cmdParam := strings.TrimPrefix(strings.TrimPrefix(cmd, this.Name()), "/")
