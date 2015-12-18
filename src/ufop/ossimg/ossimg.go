@@ -321,8 +321,8 @@ func (this *OSSImager) Do(req ufop.UfopRequest) (result interface{}, resultType 
 	resultType = ufop.RESULT_TYPE_OCTECT_URL
 
 	//for debug
-	result = []byte(qiniuUrl)
-	resultType = ufop.RESULT_TYPE_OCTECT_BYTES
+	//result = []byte(qiniuUrl)
+	//resultType = ufop.RESULT_TYPE_OCTECT_BYTES
 	return
 }
 
