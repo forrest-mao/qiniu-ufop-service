@@ -92,11 +92,6 @@ const (
 type OSSImager struct {
 	//bucket -> domain
 	domainMapping map[string]OSSImageDomain
-	bucket        string
-	//url path
-	path string
-	//src format
-	srcFormat string
 }
 
 type OSSImageConfig struct {
@@ -241,7 +236,7 @@ func (this *OSSImager) InitConfig(jobConf string) (err error) {
 /**
 juju-ossimg/jujucommentpic@4.png@960w_90Q_1l.jpg
 */
-func (this *OSSImager) parse(cmd string, operations *[]OSSImageOperation) (err error) {
+func (this *OSSImager) parse(cmd string, operations *[]OSSImageOperation) (bucket, path string, err error) {
 	cmdParam := strings.TrimPrefix(strings.TrimPrefix(cmd, this.Name()), "/")
 	items := strings.Split(cmdParam, "@")
 	if len(items) < 2 {
@@ -249,8 +244,8 @@ func (this *OSSImager) parse(cmd string, operations *[]OSSImageOperation) (err e
 		return
 	}
 
-	this.bucket = items[0]
-	this.path = fmt.Sprintf("/%s", items[1])
+	bucket = items[0]
+	path = fmt.Sprintf("/%s", items[1])
 
 	operStrItems := items[2:]
 	for _, operStr := range operStrItems {
@@ -270,7 +265,7 @@ func (this *OSSImager) parse(cmd string, operations *[]OSSImageOperation) (err e
 
 func (this *OSSImager) Do(req ufop.UfopRequest) (result interface{}, resultType int, contentType string, err error) {
 	operations := make([]OSSImageOperation, 0)
-	pErr := this.parse(req.Cmd, &operations)
+	bucket, path, pErr := this.parse(req.Cmd, &operations)
 	if pErr != nil {
 		err = pErr
 		return
@@ -278,7 +273,7 @@ func (this *OSSImager) Do(req ufop.UfopRequest) (result interface{}, resultType 
 
 	var srcDomain string
 	var cdnDomain string
-	if v, ok := this.domainMapping[this.bucket]; !ok {
+	if v, ok := this.domainMapping[bucket]; !ok {
 		err = errors.New("invalid bucket specified")
 		return
 	} else {
@@ -296,14 +291,14 @@ func (this *OSSImager) Do(req ufop.UfopRequest) (result interface{}, resultType 
 		return
 	}
 
-	srcUrl := fmt.Sprintf("%s%s", srcDomain, this.path)
+	srcUrl := fmt.Sprintf("%s%s", srcDomain, path)
 	qiniuUrl := srcUrl
 
 	for _, oper := range operations {
 		var fop string
 		switch oper.Name {
 		case OSS_OPER_IMAGE:
-			fop = this.formatQiniuImageFop(oper, srcDomain)
+			fop = this.formatQiniuImageFop(oper, srcDomain, path)
 		case OSS_OPER_WATERMARK:
 			fop = this.formatQiniuWatermarkFop(oper, cdnDomain)
 		}
@@ -589,16 +584,14 @@ func (this *OSSImager) getImageInfo(imageUrl string) (imageInfo *ImageInfo, err 
 	return
 }
 
-func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation, srcDomain string) (qFop string) {
-	srcUrl := fmt.Sprintf("%s%s", srcDomain, this.path)
+func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation, srcDomain string, path string) (qFop string) {
+	srcUrl := fmt.Sprintf("%s%s", srcDomain, path)
 
 	imageInfo, gErr := this.getImageInfo(srcUrl)
 	if gErr != nil {
 		log.Error("get image info error", gErr.Error())
 		return
 	}
-
-	this.srcFormat = imageInfo.Format
 
 	width := oper.Width
 	height := oper.Height
@@ -718,7 +711,7 @@ func (this *OSSImager) formatQiniuImageFop(oper OSSImageOperation, srcDomain str
 	}
 
 	if oper.DestFormat == "" {
-		if this.srcFormat != "png" {
+		if imageInfo.Format != "png" {
 			qFop = fmt.Sprintf("%s/format/jpg", qFop)
 		}
 	} else if oper.DestFormat != "src" {
